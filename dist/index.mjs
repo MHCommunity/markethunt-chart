@@ -2390,13 +2390,28 @@ const handleRequest = async (request) => {
 	const res = await fetch(url);
 	const apiData = await res.json();
 
+	// if we have a ?small query param, use a smaller size
+
 	// For each value in market_data, add the price key to strdata
 	const data = apiData.market_data.map(d => d.price);
 
+	const isSmall = searchParams.has('small');
+
+	if (isSmall && data.length > 365) {
+		// shrink to a year
+		data.length = 365;
+	}
+
 	const color = '#5f99d2';
-	const padding = 10;
-	const w = 500 - padding * 2;
-	const h = 200 - padding * 2;
+	let padding = 10;
+	let w = 500 - padding * 2;
+	let h = 200 - padding * 2;
+
+	if (isSmall) {
+		padding = 5;
+		w = 250 - padding * 2;
+		h = 100 - padding * 2;
+	}
 
 	const mapX = band()
 		.domain(range(data.length))
@@ -2450,7 +2465,11 @@ const handleRequest = async (request) => {
 	};
 
 	const line$1 = () => {
-		body += `<path fill="none" style="vector-effect:non-scaling-stroke;" stroke="${color}" d="${lineGen(data)}"></path>`;
+		if (isSmall) {
+			body += `<path fill="none" style="vector-effect:non-scaling-stroke;" stroke="${color}" stroke-width="2" d="${lineGen(data)}"></path>`;
+		} else {
+			body += `<path fill="none" style="vector-effect:non-scaling-stroke;" stroke="${color}" d="${lineGen(data)}"></path>`;
+		}
 	};
 
 	const area$1 = () => {
