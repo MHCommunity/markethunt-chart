@@ -9,5 +9,6 @@ updates:
     versioning-strategy: increase
     groups:
       dev-dependencies:
+        applies-to: version-updates
         patterns:
           - "*"
