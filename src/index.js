@@ -1,128 +1,98 @@
-import {
-	initialize,
-	svg2png,
-  } from 'svg2png-wasm';
+import { initialize, svg2png } from 'svg2png-wasm';
 import wasm from './svg2png_wasm_bg.wasm';
-import * as d3 from 'd3'
 
-const handleRequest = async (request) => {
-	const { search, pathname, searchParams } = new URL(request.url)
+import { scaleBand, scaleLinear } from 'd3-scale';
+import { line, curveCatmullRom } from 'd3-shape';
+import { extent, range } from 'd3-array';
 
-	const types = ['line'];
+// Initialize WASM once at module level
+let wasmInitialized = false;
 
-	const id = pathname.replace('/', '').replace('.svg', '').replace('.png', '')
+const CACHE_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
+const PNG_HEADERS = {
+  'content-type': 'image/png',
+  'cache-control': 'public, max-age=86400',
+};
 
-	// Fetch the data from markethunt
-	const url = `https://api.markethunt.win/items/${id}`
-	const res = await fetch(url)
-	const apiData = await res.json()
+const handleRequest = async (request, env, ctx) => {
+  const { pathname, searchParams } = new URL(request.url);
 
-	// if we have a ?small query param, use a smaller size
+  // Parse ID and size from pathname
+  let id = pathname.replace('/', '').replace(/\.(svg|png)$/, '');
+  let isSmall = searchParams.has('small');
 
-	// For each value in market_data, add the price key to strdata
-	const data = apiData.market_data.map(d => d.price)
+  // Check if the ID contains "-small" suffix
+  if (id.endsWith('-small')) {
+    id = id.replace('-small', '');
+    isSmall = true;
+  }
 
-	const isSmall = searchParams.has('small')
+  const cacheKey = `markethunt-chart-${id}-${isSmall ? 'small' : 'large'}`;
+  const cachedData = await env.markethuntChartCache.get(cacheKey, 'arrayBuffer');
 
-	if (isSmall && data.length > 365) {
-		// shrink to a year
-		data.length = 365
-	}
+  if (cachedData) {
+    return new Response(cachedData, { headers: PNG_HEADERS });
+  }
 
-	const color = '#5f99d2'
-	let padding = 10
-	let w = 500 - padding * 2
-	let h = 200 - padding * 2
+  // Fetch market data
+  const apiRes = await fetch(`https://api.markethunt.win/items/${id}`);
+  if (!apiRes.ok) {
+    return new Response('Item not found', { status: 404 });
+  }
 
-	if (isSmall) {
-		padding = 5
-		w = 250 - padding * 2
-		h = 100 - padding * 2
-	}
+  const apiData = await apiRes.json();
+  let data = apiData.market_data.map(d => d.price);
 
-	const mapX = d3.scaleBand()
-		.domain(d3.range(data.length))
-		.range([padding, w - padding])
-		.paddingInner(0.05)
-		.paddingOuter([0])
-		.align([0.5])
+  if (isSmall && data.length > 365) {
+    // data = data.slice(-365);
+  }
 
+  // Dimensions
+  const padding = isSmall ? 5 : 10;
+  const width = (isSmall ? 250 : 500) - padding * 2;
+  const height = (isSmall ? 100 : 200) - padding * 2;
 
-	const extY = d3.extent(data)
+  // Scales
+  const mapX = scaleBand()
+    .domain(range(data.length))
+    .range([padding, width - padding])
+    .paddingInner(0.05)
+    .align(0.5);
 
-	const mapY = d3.scaleLinear()
-		.domain(extY)
-		.nice()
-		.range([h - padding, padding])
+  const mapY = scaleLinear()
+    .domain(extent(data))
+    .nice()
+    .range([height - padding, padding]);
 
-	const cw = mapX.bandwidth()
-	const zero = mapY(0)
+  const bandwidth = mapX.bandwidth();
+  const zeroY = mapY(0);
 
-	var lineGen = d3.line()
-		.x((d, i) => mapX(i) + cw / 2)
-		.y((d, i) => mapY(d))
+  // Line generator
+  const linePath = line()
+    .x((_, i) => mapX(i) + bandwidth / 2)
+    .y(d => mapY(d))
+    .curve(curveCatmullRom.alpha(0.5))(data);
 
-	var areaGen = d3.area()
-		.x((d, i) => mapX(i) + cw / 2)
-		.y1((d, i) => mapY(d))
-		.y0(zero)
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 ${width} ${height}">
+      <line style="vector-effect:non-scaling-stroke;" stroke="#ccc" x1="0" x2="${width}" y1="${zeroY}" y2="${zeroY}"/>
+      <path fill="none" style="vector-effect:non-scaling-stroke;" stroke="#5f99d2" stroke-width="1" d="${linePath}"/>
+    </svg>`;
 
-	// if (spline) {
-	lineGen.curve(d3.curveCatmullRom.alpha(0.5))//d3.curveBasis)
-	areaGen.curve(d3.curveCatmullRom.alpha(0.5))//d3.curveBasis)
-	// }
+  // Initialize wasm if needed
+  if (!wasmInitialized) {
+    await initialize(wasm);
+    wasmInitialized = true;
+  }
 
-	let body = ''
+  const png = await svg2png(svg, {});
 
-	const bars = () => {
-		data.forEach((d, i) => {
-			const cx = mapX(i)
-			const cy = mapY(Math.max(0, d))
-			const ch = Math.abs(mapY(d) - zero)
-			body += `<rect fill="${color}" x="${cx}" y="${cy}" width="${cw}" height="${ch}"></rect>`
-		})
-	}
+  // Cache and respond
+  ctx.waitUntil(
+    env.markethuntChartCache.put(cacheKey, png, { expirationTtl: CACHE_TTL_SECONDS })
+  );
 
-	const dots = () => {
-		data.forEach((d, i) => {
-			const cx = mapX(i) + cw / 2
-			const cy = mapY(d)
-			body += `<circle style="vector-effect:non-scaling-size;" fill="${color}" cx="${cx}" cy="${cy}" r="5"></circle>`
-		})
-	}
+  return new Response(png, { headers: PNG_HEADERS });
+};
 
-	const line = () => {
-		if (isSmall) {
-			body += `<path fill="none" style="vector-effect:non-scaling-stroke;" stroke="${color}" stroke-width="2" d="${lineGen(data)}"></path>`
-		} else {
-			body += `<path fill="none" style="vector-effect:non-scaling-stroke;" stroke="${color}" d="${lineGen(data)}"></path>`
-		}
-	}
-
-	const area = () => {
-		body += `<path fill="${color}" d="${areaGen(data)}"></path>`
-	}
-
-	const funcs = {
-		bars, dots, line, area
-	}
-
-	types.forEach(type => {
-		funcs[type]()
-	})
-
-	const svg = `<svg
-    xmlns="http://www.w3.org/2000/svg"
-    xmlns:xlink="http://www.w3.org/1999/xlink"
-    preserveAspectRatio="none"
-    viewBox="0 0 ${w} ${h}">
-      <line style="vector-effect:non-scaling-stroke;" stroke="#ccc" x1="0" x2="${w}" y1="${zero}" y2="${zero}"></line>
-      ${body}
-  </svg>`
-
-	await initialize(wasm).catch(() => {});
-	const buf = await svg2png(svg, {});
-	return new Response(buf, { headers: { 'content-type': 'image/png' } });
-}
-
-export default { fetch: handleRequest }
+export default { fetch: handleRequest };

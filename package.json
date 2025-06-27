@@ -1,25 +1,28 @@
 {
   "name": "markethunt-chart",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "author": "Brad Parbs <brad@bradparbs.com> (https://bradparbs.com/)",
   "license": "MIT",
   "dependencies": {
     "@fnando/sparkline": "^0.3.10",
-    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-node-resolve": "^15.3.1",
     "@rollup/plugin-replace": "^5.0.7",
     "d3": "^7.9.0",
-    "rollup": "^4.20.0",
+    "rollup": "^4.44.1",
     "rollup-plugin-copy": "^3.5.0",
     "svg2png-wasm": "^1.4.1",
-    "util.promisify": "^1.1.2",
-    "wrangler": "^3.69.1"
+    "util.promisify": "^1.1.3"
+  },
+  "devDependencies": {
+    "wrangler": "^4.22.0"
   },
   "scripts": {
     "build": "rollup -c",
+    "dev": "wrangler dev dist/index.mjs",
     "publish": "wrangler publish",
     "tail": "wrangler tail --format=pretty"
-  },
-  "type": "module"
+  }
 }

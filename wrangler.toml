@@ -1,10 +1,8 @@
 name = "markethunt-chart"
 type = "javascript"
-usage_model = 'bundled'
 workers_dev = true
 compatibility_date = "2021-08-27" # required
 compatibility_flags = [ "formdata_parser_supports_files" ] # required
-node_compat = true
 
 [build]
 command = "npm run build"
@@ -17,3 +15,7 @@ main = "./index.mjs"
 [[build.upload.rules]]
 globs = ["**/*.wasm"]
 type = "CompiledWasm"
+
+[[kv_namespaces]]
+binding = "markethuntChartCache"
+id = "03bde10fda764c86ab7ca58b4e198839"

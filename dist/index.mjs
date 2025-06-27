@@ -3,21 +3,27 @@ import wasm$1 from './svg2png_wasm_bg.wasm';
 /**
  * @file This library uses [resvg](https://github.com/RazrFalcon/resvg), which is licensed unser MPL-2.0. The source code for resvg can be found [here](https://github.com/RazrFalcon/resvg).
  */
+
 // dist-wasm/svg2png_wasm.js
 var wasm;
-var cachedTextDecoder = new TextDecoder("utf-8", { ignoreBOM: true, fatal: true });
-cachedTextDecoder.decode();
-var cachegetUint8Memory0 = null;
+var cachedTextDecoder = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8", { ignoreBOM: true, fatal: true }) : { decode: () => {
+  throw Error("TextDecoder not available");
+} };
+if (typeof TextDecoder !== "undefined") {
+  cachedTextDecoder.decode();
+}
+var cachedUint8Memory0 = null;
 function getUint8Memory0() {
-  if (cachegetUint8Memory0 === null || cachegetUint8Memory0.buffer !== wasm.memory.buffer) {
-    cachegetUint8Memory0 = new Uint8Array(wasm.memory.buffer);
+  if (cachedUint8Memory0 === null || cachedUint8Memory0.byteLength === 0) {
+    cachedUint8Memory0 = new Uint8Array(wasm.memory.buffer);
   }
-  return cachegetUint8Memory0;
+  return cachedUint8Memory0;
 }
 function getStringFromWasm0(ptr, len) {
+  ptr = ptr >>> 0;
   return cachedTextDecoder.decode(getUint8Memory0().subarray(ptr, ptr + len));
 }
-var heap = new Array(32).fill(void 0);
+var heap = new Array(128).fill(void 0);
 heap.push(void 0, null, true, false);
 var heap_next = heap.length;
 function addHeapObject(obj) {
@@ -32,7 +38,7 @@ function getObject(idx) {
   return heap[idx];
 }
 function dropObject(idx) {
-  if (idx < 36)
+  if (idx < 132)
     return;
   heap[idx] = heap_next;
   heap_next = idx;
@@ -44,12 +50,14 @@ function takeObject(idx) {
 }
 var WASM_VECTOR_LEN = 0;
 function passArray8ToWasm0(arg, malloc) {
-  const ptr = malloc(arg.length * 1);
+  const ptr = malloc(arg.length * 1, 1) >>> 0;
   getUint8Memory0().set(arg, ptr / 1);
   WASM_VECTOR_LEN = arg.length;
   return ptr;
 }
-var cachedTextEncoder = new TextEncoder("utf-8");
+var cachedTextEncoder = typeof TextEncoder !== "undefined" ? new TextEncoder("utf-8") : { encode: () => {
+  throw Error("TextEncoder not available");
+} };
 var encodeString = typeof cachedTextEncoder.encodeInto === "function" ? function(arg, view) {
   return cachedTextEncoder.encodeInto(arg, view);
 } : function(arg, view) {
@@ -63,13 +71,13 @@ var encodeString = typeof cachedTextEncoder.encodeInto === "function" ? function
 function passStringToWasm0(arg, malloc, realloc) {
   if (realloc === void 0) {
     const buf = cachedTextEncoder.encode(arg);
-    const ptr2 = malloc(buf.length);
+    const ptr2 = malloc(buf.length, 1) >>> 0;
     getUint8Memory0().subarray(ptr2, ptr2 + buf.length).set(buf);
     WASM_VECTOR_LEN = buf.length;
     return ptr2;
   }
   let len = arg.length;
-  let ptr = malloc(len);
+  let ptr = malloc(len, 1) >>> 0;
   const mem = getUint8Memory0();
   let offset = 0;
   for (; offset < len; offset++) {
@@ -82,7 +90,7 @@ function passStringToWasm0(arg, malloc, realloc) {
     if (offset !== 0) {
       arg = arg.slice(offset);
     }
-    ptr = realloc(ptr, len, len = offset + arg.length * 3);
+    ptr = realloc(ptr, len, len = offset + arg.length * 3, 1) >>> 0;
     const view = getUint8Memory0().subarray(ptr + offset, ptr + len);
     const ret = encodeString(arg, view);
     offset += ret.written;
@@ -93,24 +101,26 @@ function passStringToWasm0(arg, malloc, realloc) {
 function isLikeNone(x) {
   return x === void 0 || x === null;
 }
-var cachegetInt32Memory0 = null;
+var cachedInt32Memory0 = null;
 function getInt32Memory0() {
-  if (cachegetInt32Memory0 === null || cachegetInt32Memory0.buffer !== wasm.memory.buffer) {
-    cachegetInt32Memory0 = new Int32Array(wasm.memory.buffer);
+  if (cachedInt32Memory0 === null || cachedInt32Memory0.byteLength === 0) {
+    cachedInt32Memory0 = new Int32Array(wasm.memory.buffer);
   }
-  return cachegetInt32Memory0;
+  return cachedInt32Memory0;
 }
 function getArrayU8FromWasm0(ptr, len) {
+  ptr = ptr >>> 0;
   return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
 }
-var cachegetUint32Memory0 = null;
+var cachedUint32Memory0 = null;
 function getUint32Memory0() {
-  if (cachegetUint32Memory0 === null || cachegetUint32Memory0.buffer !== wasm.memory.buffer) {
-    cachegetUint32Memory0 = new Uint32Array(wasm.memory.buffer);
+  if (cachedUint32Memory0 === null || cachedUint32Memory0.byteLength === 0) {
+    cachedUint32Memory0 = new Uint32Array(wasm.memory.buffer);
   }
-  return cachegetUint32Memory0;
+  return cachedUint32Memory0;
 }
 function getArrayJsValueFromWasm0(ptr, len) {
+  ptr = ptr >>> 0;
   const mem = getUint32Memory0();
   const slice = mem.subarray(ptr / 4, ptr / 4 + len);
   const result = [];
@@ -135,24 +145,36 @@ function createConverter(default_serif_family, default_sans_serif_family, defaul
 }
 var Converter = class {
   static __wrap(ptr) {
+    ptr = ptr >>> 0;
     const obj = Object.create(Converter.prototype);
-    obj.ptr = ptr;
+    obj.__wbg_ptr = ptr;
     return obj;
   }
   __destroy_into_raw() {
-    const ptr = this.ptr;
-    this.ptr = 0;
+    const ptr = this.__wbg_ptr;
+    this.__wbg_ptr = 0;
     return ptr;
   }
   free() {
     const ptr = this.__destroy_into_raw();
     wasm.__wbg_converter_free(ptr);
   }
+  /**
+  * @param {Uint8Array} font
+  */
   registerFont(font) {
     const ptr0 = passArray8ToWasm0(font, wasm.__wbindgen_malloc);
     const len0 = WASM_VECTOR_LEN;
-    wasm.converter_registerFont(this.ptr, ptr0, len0);
+    wasm.converter_registerFont(this.__wbg_ptr, ptr0, len0);
   }
+  /**
+  * @param {string} svg
+  * @param {number | undefined} scale
+  * @param {number | undefined} width
+  * @param {number | undefined} height
+  * @param {string | undefined} background
+  * @returns {Uint8Array}
+  */
   convert(svg, scale, width, height, background) {
     try {
       const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
@@ -160,7 +182,7 @@ var Converter = class {
       const len0 = WASM_VECTOR_LEN;
       var ptr1 = isLikeNone(background) ? 0 : passStringToWasm0(background, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
       var len1 = WASM_VECTOR_LEN;
-      wasm.converter_convert(retptr, this.ptr, ptr0, len0, !isLikeNone(scale), isLikeNone(scale) ? 0 : scale, !isLikeNone(width), isLikeNone(width) ? 0 : width, !isLikeNone(height), isLikeNone(height) ? 0 : height, ptr1, len1);
+      wasm.converter_convert(retptr, this.__wbg_ptr, ptr0, len0, !isLikeNone(scale), isLikeNone(scale) ? 0 : scale, !isLikeNone(width), isLikeNone(width) ? 0 : width, !isLikeNone(height), isLikeNone(height) ? 0 : height, ptr1, len1);
       var r0 = getInt32Memory0()[retptr / 4 + 0];
       var r1 = getInt32Memory0()[retptr / 4 + 1];
       var r2 = getInt32Memory0()[retptr / 4 + 2];
@@ -168,28 +190,31 @@ var Converter = class {
       if (r3) {
         throw takeObject(r2);
       }
-      var v2 = getArrayU8FromWasm0(r0, r1).slice();
+      var v3 = getArrayU8FromWasm0(r0, r1).slice();
       wasm.__wbindgen_free(r0, r1 * 1);
-      return v2;
+      return v3;
     } finally {
       wasm.__wbindgen_add_to_stack_pointer(16);
     }
   }
+  /**
+  * @returns {any[]}
+  */
   list_fonts() {
     try {
       const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-      wasm.converter_list_fonts(retptr, this.ptr);
+      wasm.converter_list_fonts(retptr, this.__wbg_ptr);
       var r0 = getInt32Memory0()[retptr / 4 + 0];
       var r1 = getInt32Memory0()[retptr / 4 + 1];
-      var v0 = getArrayJsValueFromWasm0(r0, r1).slice();
+      var v1 = getArrayJsValueFromWasm0(r0, r1).slice();
       wasm.__wbindgen_free(r0, r1 * 4);
-      return v0;
+      return v1;
     } finally {
       wasm.__wbindgen_add_to_stack_pointer(16);
     }
   }
 };
-async function load(module, imports) {
+async function __wbg_load(module, imports) {
   if (typeof Response === "function" && module instanceof Response) {
     if (typeof WebAssembly.instantiateStreaming === "function") {
       try {
@@ -213,32 +238,33 @@ async function load(module, imports) {
     }
   }
 }
-async function init(input) {
-  if (typeof input === "undefined") {
-    input = new URL("svg2png_wasm_bg.wasm", void 0);
-  }
+function __wbg_get_imports() {
   const imports = {};
   imports.wbg = {};
   imports.wbg.__wbindgen_string_new = function(arg0, arg1) {
     const ret = getStringFromWasm0(arg0, arg1);
     return addHeapObject(ret);
   };
-  imports.wbg.__wbg_new_693216e109162396 = function() {
+  imports.wbg.__wbg_new_abda76e883ba8a5f = function() {
     const ret = new Error();
     return addHeapObject(ret);
   };
-  imports.wbg.__wbg_stack_0ddaca5d1abfb52f = function(arg0, arg1) {
+  imports.wbg.__wbg_stack_658279fe44541cf6 = function(arg0, arg1) {
     const ret = getObject(arg1).stack;
-    const ptr0 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    getInt32Memory0()[arg0 / 4 + 1] = len0;
-    getInt32Memory0()[arg0 / 4 + 0] = ptr0;
+    const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len1 = WASM_VECTOR_LEN;
+    getInt32Memory0()[arg0 / 4 + 1] = len1;
+    getInt32Memory0()[arg0 / 4 + 0] = ptr1;
   };
-  imports.wbg.__wbg_error_09919627ac0992f5 = function(arg0, arg1) {
+  imports.wbg.__wbg_error_f851667af71bcfc6 = function(arg0, arg1) {
+    let deferred0_0;
+    let deferred0_1;
     try {
+      deferred0_0 = arg0;
+      deferred0_1 = arg1;
       console.error(getStringFromWasm0(arg0, arg1));
     } finally {
-      wasm.__wbindgen_free(arg0, arg1);
+      wasm.__wbindgen_free(deferred0_0, deferred0_1, 1);
     }
   };
   imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
@@ -247,37 +273,68 @@ async function init(input) {
   imports.wbg.__wbindgen_throw = function(arg0, arg1) {
     throw new Error(getStringFromWasm0(arg0, arg1));
   };
-  if (typeof input === "string" || typeof Request === "function" && input instanceof Request || typeof URL === "function" && input instanceof URL) {
-    input = fetch(input);
-  }
-  const { instance, module } = await load(await input, imports);
+  return imports;
+}
+function __wbg_finalize_init(instance, module) {
   wasm = instance.exports;
-  init.__wbindgen_wasm_module = module;
+  __wbg_init.__wbindgen_wasm_module = module;
+  cachedInt32Memory0 = null;
+  cachedUint32Memory0 = null;
+  cachedUint8Memory0 = null;
   wasm.__wbindgen_start();
   return wasm;
 }
-var svg2png_wasm_default = init;
+async function __wbg_init(input) {
+  if (wasm !== void 0)
+    return wasm;
+  if (typeof input === "undefined") {
+    input = new URL("svg2png_wasm_bg.wasm", void 0);
+  }
+  const imports = __wbg_get_imports();
+  if (typeof input === "string" || typeof Request === "function" && input instanceof Request || typeof URL === "function" && input instanceof URL) {
+    input = fetch(input);
+  }
+  const { instance, module } = await __wbg_load(await input, imports);
+  return __wbg_finalize_init(instance, module);
+}
+var svg2png_wasm_default = __wbg_init;
 
 // lib/index.ts
 var initialized = false;
 var initialize = async (mod) => {
   if (initialized) {
-    throw new Error("Already initialized. The `initialize` function can be used only once.");
+    throw new Error(
+      "Already initialized. The `initialize` function can be used only once."
+    );
   }
   await svg2png_wasm_default(await mod);
   initialized = true;
 };
 var createSvg2png = (opts) => {
   if (!initialized)
-    throw new Error("WASM has not been initialized. Call `initialize` function.");
+    throw new Error(
+      "WASM has not been initialized. Call `initialize` function."
+    );
   let converter;
-  converter = createConverter(opts?.defaultFontFamily?.serifFamily, opts?.defaultFontFamily?.sansSerifFamily, opts?.defaultFontFamily?.cursiveFamily, opts?.defaultFontFamily?.fantasyFamily, opts?.defaultFontFamily?.monospaceFamily);
+  converter = createConverter(
+    opts?.defaultFontFamily?.serifFamily,
+    opts?.defaultFontFamily?.sansSerifFamily,
+    opts?.defaultFontFamily?.cursiveFamily,
+    opts?.defaultFontFamily?.fantasyFamily,
+    opts?.defaultFontFamily?.monospaceFamily
+  );
   for (const font of opts?.fonts ?? []) {
     converter.registerFont(font);
   }
   const svg2png2 = (svg, options) => new Promise((resolve, reject) => {
     try {
-      const result = converter?.convert(svg, options?.scale, options?.width, options?.height, options?.backgroundColor);
+      const result = converter?.convert(
+        svg,
+        options?.scale,
+        options?.width,
+        options?.height,
+        options?.backgroundColor
+      );
       if (result)
         resolve(result);
       else
@@ -374,26 +431,13 @@ function number$1(x) {
 const ascendingBisect = bisector(ascending);
 const bisectRight = ascendingBisect.right;
 bisector(number$1).center;
-var bisect = bisectRight;
 
 function extent(values, valueof) {
   let min;
   let max;
-  if (valueof === undefined) {
+  {
     for (const value of values) {
       if (value != null) {
-        if (min === undefined) {
-          if (value >= value) min = max = value;
-        } else {
-          if (min > value) min = value;
-          if (max < value) max = value;
-        }
-      }
-    }
-  } else {
-    let index = -1;
-    for (let value of values) {
-      if ((value = valueof(value, ++index, values)) != null) {
         if (min === undefined) {
           if (value >= value) min = max = value;
         } else {
@@ -519,6 +563,139 @@ function range(start, stop, step) {
   }
 
   return range;
+}
+
+function initRange(domain, range) {
+  switch (arguments.length) {
+    case 0: break;
+    case 1: this.range(domain); break;
+    default: this.range(range).domain(domain); break;
+  }
+  return this;
+}
+
+const implicit = Symbol("implicit");
+
+function ordinal() {
+  var index = new InternMap(),
+      domain = [],
+      range = [],
+      unknown = implicit;
+
+  function scale(d) {
+    let i = index.get(d);
+    if (i === undefined) {
+      if (unknown !== implicit) return unknown;
+      index.set(d, i = domain.push(d) - 1);
+    }
+    return range[i % range.length];
+  }
+
+  scale.domain = function(_) {
+    if (!arguments.length) return domain.slice();
+    domain = [], index = new InternMap();
+    for (const value of _) {
+      if (index.has(value)) continue;
+      index.set(value, domain.push(value) - 1);
+    }
+    return scale;
+  };
+
+  scale.range = function(_) {
+    return arguments.length ? (range = Array.from(_), scale) : range.slice();
+  };
+
+  scale.unknown = function(_) {
+    return arguments.length ? (unknown = _, scale) : unknown;
+  };
+
+  scale.copy = function() {
+    return ordinal(domain, range).unknown(unknown);
+  };
+
+  initRange.apply(scale, arguments);
+
+  return scale;
+}
+
+function band() {
+  var scale = ordinal().unknown(undefined),
+      domain = scale.domain,
+      ordinalRange = scale.range,
+      r0 = 0,
+      r1 = 1,
+      step,
+      bandwidth,
+      round = false,
+      paddingInner = 0,
+      paddingOuter = 0,
+      align = 0.5;
+
+  delete scale.unknown;
+
+  function rescale() {
+    var n = domain().length,
+        reverse = r1 < r0,
+        start = reverse ? r1 : r0,
+        stop = reverse ? r0 : r1;
+    step = (stop - start) / Math.max(1, n - paddingInner + paddingOuter * 2);
+    if (round) step = Math.floor(step);
+    start += (stop - start - step * (n - paddingInner)) * align;
+    bandwidth = step * (1 - paddingInner);
+    if (round) start = Math.round(start), bandwidth = Math.round(bandwidth);
+    var values = range(n).map(function(i) { return start + step * i; });
+    return ordinalRange(reverse ? values.reverse() : values);
+  }
+
+  scale.domain = function(_) {
+    return arguments.length ? (domain(_), rescale()) : domain();
+  };
+
+  scale.range = function(_) {
+    return arguments.length ? ([r0, r1] = _, r0 = +r0, r1 = +r1, rescale()) : [r0, r1];
+  };
+
+  scale.rangeRound = function(_) {
+    return [r0, r1] = _, r0 = +r0, r1 = +r1, round = true, rescale();
+  };
+
+  scale.bandwidth = function() {
+    return bandwidth;
+  };
+
+  scale.step = function() {
+    return step;
+  };
+
+  scale.round = function(_) {
+    return arguments.length ? (round = !!_, rescale()) : round;
+  };
+
+  scale.padding = function(_) {
+    return arguments.length ? (paddingInner = Math.min(1, paddingOuter = +_), rescale()) : paddingInner;
+  };
+
+  scale.paddingInner = function(_) {
+    return arguments.length ? (paddingInner = Math.min(1, _), rescale()) : paddingInner;
+  };
+
+  scale.paddingOuter = function(_) {
+    return arguments.length ? (paddingOuter = +_, rescale()) : paddingOuter;
+  };
+
+  scale.align = function(_) {
+    return arguments.length ? (align = Math.max(0, Math.min(1, _)), rescale()) : align;
+  };
+
+  scale.copy = function() {
+    return band(domain(), [r0, r1])
+        .round(round)
+        .paddingInner(paddingInner)
+        .paddingOuter(paddingOuter)
+        .align(align);
+  };
+
+  return initRange.apply(rescale(), arguments);
 }
 
 function define(constructor, factory, prototype) {
@@ -765,7 +942,7 @@ function rgbConvert(o) {
   return new Rgb(o.r, o.g, o.b, o.opacity);
 }
 
-function rgb(r, g, b, opacity) {
+function rgb$1(r, g, b, opacity) {
   return arguments.length === 1 ? rgbConvert(r) : new Rgb(r, g, b, opacity == null ? 1 : opacity);
 }
 
@@ -776,7 +953,7 @@ function Rgb(r, g, b, opacity) {
   this.opacity = +opacity;
 }
 
-define(Rgb, rgb, extend(Color, {
+define(Rgb, rgb$1, extend(Color, {
   brighter(k) {
     k = k == null ? brighter : Math.pow(brighter, k);
     return new Rgb(this.r * k, this.g * k, this.b * k, this.opacity);
@@ -952,11 +1129,11 @@ function nogamma(a, b) {
   return d ? linear$1(a, d) : constant$1(isNaN(a) ? b : a);
 }
 
-var interpolateRgb = (function rgbGamma(y) {
+var rgb = (function rgbGamma(y) {
   var color = gamma(y);
 
-  function rgb$1(start, end) {
-    var r = color((start = rgb(start)).r, (end = rgb(end)).r),
+  function rgb(start, end) {
+    var r = color((start = rgb$1(start)).r, (end = rgb$1(end)).r),
         g = color(start.g, end.g),
         b = color(start.b, end.b),
         opacity = nogamma(start.opacity, end.opacity);
@@ -969,9 +1146,9 @@ var interpolateRgb = (function rgbGamma(y) {
     };
   }
 
-  rgb$1.gamma = rgbGamma;
+  rgb.gamma = rgbGamma;
 
-  return rgb$1;
+  return rgb;
 })(1);
 
 function numberArray(a, b) {
@@ -1055,7 +1232,7 @@ function one(b) {
   };
 }
 
-function interpolateString(a, b) {
+function string(a, b) {
   var bi = reA.lastIndex = reB.lastIndex = 0, // scan index for next number in b
       am, // current match in a
       bm, // current match in b
@@ -1107,8 +1284,8 @@ function interpolate(a, b) {
   var t = typeof b, c;
   return b == null || t === "boolean" ? constant$1(b)
       : (t === "number" ? interpolateNumber
-      : t === "string" ? ((c = color(b)) ? (b = c, interpolateRgb) : interpolateString)
-      : b instanceof color ? interpolateRgb
+      : t === "string" ? ((c = color(b)) ? (b = c, rgb) : string)
+      : b instanceof color ? rgb
       : b instanceof Date ? date
       : isNumberArray(b) ? numberArray
       : Array.isArray(b) ? genericArray
@@ -1122,150 +1299,135 @@ function interpolateRound(a, b) {
   };
 }
 
-const pi = Math.PI,
-    tau = 2 * pi,
-    epsilon$1 = 1e-6,
-    tauEpsilon = tau - epsilon$1;
-
-function append(strings) {
-  this._ += strings[0];
-  for (let i = 1, n = strings.length; i < n; ++i) {
-    this._ += arguments[i] + strings[i];
-  }
-}
-
-function appendRound(digits) {
-  let d = Math.floor(digits);
-  if (!(d >= 0)) throw new Error(`invalid digits: ${digits}`);
-  if (d > 15) return append;
-  const k = 10 ** d;
-  return function(strings) {
-    this._ += strings[0];
-    for (let i = 1, n = strings.length; i < n; ++i) {
-      this._ += Math.round(arguments[i] * k) / k + strings[i];
-    }
+function constants(x) {
+  return function() {
+    return x;
   };
 }
 
-class Path {
-  constructor(digits) {
-    this._x0 = this._y0 = // start of current subpath
-    this._x1 = this._y1 = null; // end of current subpath
-    this._ = "";
-    this._append = digits == null ? append : appendRound(digits);
+function number(x) {
+  return +x;
+}
+
+var unit = [0, 1];
+
+function identity$1(x) {
+  return x;
+}
+
+function normalize(a, b) {
+  return (b -= (a = +a))
+      ? function(x) { return (x - a) / b; }
+      : constants(isNaN(b) ? NaN : 0.5);
+}
+
+function clamper(a, b) {
+  var t;
+  if (a > b) t = a, a = b, b = t;
+  return function(x) { return Math.max(a, Math.min(b, x)); };
+}
+
+// normalize(a, b)(x) takes a domain value x in [a,b] and returns the corresponding parameter t in [0,1].
+// interpolate(a, b)(t) takes a parameter t in [0,1] and returns the corresponding range value x in [a,b].
+function bimap(domain, range, interpolate) {
+  var d0 = domain[0], d1 = domain[1], r0 = range[0], r1 = range[1];
+  if (d1 < d0) d0 = normalize(d1, d0), r0 = interpolate(r1, r0);
+  else d0 = normalize(d0, d1), r0 = interpolate(r0, r1);
+  return function(x) { return r0(d0(x)); };
+}
+
+function polymap(domain, range, interpolate) {
+  var j = Math.min(domain.length, range.length) - 1,
+      d = new Array(j),
+      r = new Array(j),
+      i = -1;
+
+  // Reverse descending domains.
+  if (domain[j] < domain[0]) {
+    domain = domain.slice().reverse();
+    range = range.slice().reverse();
   }
-  moveTo(x, y) {
-    this._append`M${this._x0 = this._x1 = +x},${this._y0 = this._y1 = +y}`;
+
+  while (++i < j) {
+    d[i] = normalize(domain[i], domain[i + 1]);
+    r[i] = interpolate(range[i], range[i + 1]);
   }
-  closePath() {
-    if (this._x1 !== null) {
-      this._x1 = this._x0, this._y1 = this._y0;
-      this._append`Z`;
-    }
+
+  return function(x) {
+    var i = bisectRight(domain, x, 1, j) - 1;
+    return r[i](d[i](x));
+  };
+}
+
+function copy(source, target) {
+  return target
+      .domain(source.domain())
+      .range(source.range())
+      .interpolate(source.interpolate())
+      .clamp(source.clamp())
+      .unknown(source.unknown());
+}
+
+function transformer() {
+  var domain = unit,
+      range = unit,
+      interpolate$1 = interpolate,
+      transform,
+      untransform,
+      unknown,
+      clamp = identity$1,
+      piecewise,
+      output,
+      input;
+
+  function rescale() {
+    var n = Math.min(domain.length, range.length);
+    if (clamp !== identity$1) clamp = clamper(domain[0], domain[n - 1]);
+    piecewise = n > 2 ? polymap : bimap;
+    output = input = null;
+    return scale;
   }
-  lineTo(x, y) {
-    this._append`L${this._x1 = +x},${this._y1 = +y}`;
+
+  function scale(x) {
+    return x == null || isNaN(x = +x) ? unknown : (output || (output = piecewise(domain.map(transform), range, interpolate$1)))(transform(clamp(x)));
   }
-  quadraticCurveTo(x1, y1, x, y) {
-    this._append`Q${+x1},${+y1},${this._x1 = +x},${this._y1 = +y}`;
-  }
-  bezierCurveTo(x1, y1, x2, y2, x, y) {
-    this._append`C${+x1},${+y1},${+x2},${+y2},${this._x1 = +x},${this._y1 = +y}`;
-  }
-  arcTo(x1, y1, x2, y2, r) {
-    x1 = +x1, y1 = +y1, x2 = +x2, y2 = +y2, r = +r;
 
-    // Is the radius negative? Error.
-    if (r < 0) throw new Error(`negative radius: ${r}`);
+  scale.invert = function(y) {
+    return clamp(untransform((input || (input = piecewise(range, domain.map(transform), interpolateNumber)))(y)));
+  };
 
-    let x0 = this._x1,
-        y0 = this._y1,
-        x21 = x2 - x1,
-        y21 = y2 - y1,
-        x01 = x0 - x1,
-        y01 = y0 - y1,
-        l01_2 = x01 * x01 + y01 * y01;
+  scale.domain = function(_) {
+    return arguments.length ? (domain = Array.from(_, number), rescale()) : domain.slice();
+  };
 
-    // Is this path empty? Move to (x1,y1).
-    if (this._x1 === null) {
-      this._append`M${this._x1 = x1},${this._y1 = y1}`;
-    }
+  scale.range = function(_) {
+    return arguments.length ? (range = Array.from(_), rescale()) : range.slice();
+  };
 
-    // Or, is (x1,y1) coincident with (x0,y0)? Do nothing.
-    else if (!(l01_2 > epsilon$1));
+  scale.rangeRound = function(_) {
+    return range = Array.from(_), interpolate$1 = interpolateRound, rescale();
+  };
 
-    // Or, are (x0,y0), (x1,y1) and (x2,y2) collinear?
-    // Equivalently, is (x1,y1) coincident with (x2,y2)?
-    // Or, is the radius zero? Line to (x1,y1).
-    else if (!(Math.abs(y01 * x21 - y21 * x01) > epsilon$1) || !r) {
-      this._append`L${this._x1 = x1},${this._y1 = y1}`;
-    }
+  scale.clamp = function(_) {
+    return arguments.length ? (clamp = _ ? true : identity$1, rescale()) : clamp !== identity$1;
+  };
 
-    // Otherwise, draw an arc!
-    else {
-      let x20 = x2 - x0,
-          y20 = y2 - y0,
-          l21_2 = x21 * x21 + y21 * y21,
-          l20_2 = x20 * x20 + y20 * y20,
-          l21 = Math.sqrt(l21_2),
-          l01 = Math.sqrt(l01_2),
-          l = r * Math.tan((pi - Math.acos((l21_2 + l01_2 - l20_2) / (2 * l21 * l01))) / 2),
-          t01 = l / l01,
-          t21 = l / l21;
+  scale.interpolate = function(_) {
+    return arguments.length ? (interpolate$1 = _, rescale()) : interpolate$1;
+  };
 
-      // If the start tangent is not coincident with (x0,y0), line to.
-      if (Math.abs(t01 - 1) > epsilon$1) {
-        this._append`L${x1 + t01 * x01},${y1 + t01 * y01}`;
-      }
+  scale.unknown = function(_) {
+    return arguments.length ? (unknown = _, scale) : unknown;
+  };
 
-      this._append`A${r},${r},0,0,${+(y01 * x20 > x01 * y20)},${this._x1 = x1 + t21 * x21},${this._y1 = y1 + t21 * y21}`;
-    }
-  }
-  arc(x, y, r, a0, a1, ccw) {
-    x = +x, y = +y, r = +r, ccw = !!ccw;
+  return function(t, u) {
+    transform = t, untransform = u;
+    return rescale();
+  };
+}
 
-    // Is the radius negative? Error.
-    if (r < 0) throw new Error(`negative radius: ${r}`);
-
-    let dx = r * Math.cos(a0),
-        dy = r * Math.sin(a0),
-        x0 = x + dx,
-        y0 = y + dy,
-        cw = 1 ^ ccw,
-        da = ccw ? a0 - a1 : a1 - a0;
-
-    // Is this path empty? Move to (x0,y0).
-    if (this._x1 === null) {
-      this._append`M${x0},${y0}`;
-    }
-
-    // Or, is (x0,y0) not coincident with the previous point? Line to (x0,y0).
-    else if (Math.abs(this._x1 - x0) > epsilon$1 || Math.abs(this._y1 - y0) > epsilon$1) {
-      this._append`L${x0},${y0}`;
-    }
-
-    // Is this arc empty? We’re done.
-    if (!r) return;
-
-    // Does the angle go the wrong way? Flip the direction.
-    if (da < 0) da = da % tau + tau;
-
-    // Is this a complete circle? Draw two arcs to complete the circle.
-    if (da > tauEpsilon) {
-      this._append`A${r},${r},0,1,${cw},${x - dx},${y - dy}A${r},${r},0,1,${cw},${this._x1 = x0},${this._y1 = y0}`;
-    }
-
-    // Is this arc non-empty? Draw an arc!
-    else if (da > epsilon$1) {
-      this._append`A${r},${r},0,${+(da >= pi)},${cw},${this._x1 = x + r * Math.cos(a1)},${this._y1 = y + r * Math.sin(a1)}`;
-    }
-  }
-  rect(x, y, w, h) {
-    this._append`M${this._x0 = this._x1 = +x},${this._y0 = this._y1 = +y}h${w = +w}v${+h}h${-w}Z`;
-  }
-  toString() {
-    return this._;
-  }
+function continuous() {
+  return transformer()(identity$1, identity$1);
 }
 
 function formatDecimal(x) {
@@ -1421,7 +1583,7 @@ var formatTypes = {
   "x": (x) => Math.round(x).toString(16)
 };
 
-function identity$1(x) {
+function identity(x) {
   return x;
 }
 
@@ -1429,11 +1591,11 @@ var map = Array.prototype.map,
     prefixes = ["y","z","a","f","p","n","µ","m","","k","M","G","T","P","E","Z","Y"];
 
 function formatLocale(locale) {
-  var group = locale.grouping === undefined || locale.thousands === undefined ? identity$1 : formatGroup(map.call(locale.grouping, Number), locale.thousands + ""),
+  var group = locale.grouping === undefined || locale.thousands === undefined ? identity : formatGroup(map.call(locale.grouping, Number), locale.thousands + ""),
       currencyPrefix = locale.currency === undefined ? "" : locale.currency[0] + "",
       currencySuffix = locale.currency === undefined ? "" : locale.currency[1] + "",
       decimal = locale.decimal === undefined ? "." : locale.decimal + "",
-      numerals = locale.numerals === undefined ? identity$1 : formatNumerals(map.call(locale.numerals, String)),
+      numerals = locale.numerals === undefined ? identity : formatNumerals(map.call(locale.numerals, String)),
       percent = locale.percent === undefined ? "%" : locale.percent + "",
       minus = locale.minus === undefined ? "−" : locale.minus + "",
       nan = locale.nan === undefined ? "NaN" : locale.nan + "";
@@ -1595,270 +1757,6 @@ function precisionRound(step, max) {
   return Math.max(0, exponent(max) - exponent(step)) + 1;
 }
 
-function initRange(domain, range) {
-  switch (arguments.length) {
-    case 0: break;
-    case 1: this.range(domain); break;
-    default: this.range(range).domain(domain); break;
-  }
-  return this;
-}
-
-const implicit = Symbol("implicit");
-
-function ordinal() {
-  var index = new InternMap(),
-      domain = [],
-      range = [],
-      unknown = implicit;
-
-  function scale(d) {
-    let i = index.get(d);
-    if (i === undefined) {
-      if (unknown !== implicit) return unknown;
-      index.set(d, i = domain.push(d) - 1);
-    }
-    return range[i % range.length];
-  }
-
-  scale.domain = function(_) {
-    if (!arguments.length) return domain.slice();
-    domain = [], index = new InternMap();
-    for (const value of _) {
-      if (index.has(value)) continue;
-      index.set(value, domain.push(value) - 1);
-    }
-    return scale;
-  };
-
-  scale.range = function(_) {
-    return arguments.length ? (range = Array.from(_), scale) : range.slice();
-  };
-
-  scale.unknown = function(_) {
-    return arguments.length ? (unknown = _, scale) : unknown;
-  };
-
-  scale.copy = function() {
-    return ordinal(domain, range).unknown(unknown);
-  };
-
-  initRange.apply(scale, arguments);
-
-  return scale;
-}
-
-function band() {
-  var scale = ordinal().unknown(undefined),
-      domain = scale.domain,
-      ordinalRange = scale.range,
-      r0 = 0,
-      r1 = 1,
-      step,
-      bandwidth,
-      round = false,
-      paddingInner = 0,
-      paddingOuter = 0,
-      align = 0.5;
-
-  delete scale.unknown;
-
-  function rescale() {
-    var n = domain().length,
-        reverse = r1 < r0,
-        start = reverse ? r1 : r0,
-        stop = reverse ? r0 : r1;
-    step = (stop - start) / Math.max(1, n - paddingInner + paddingOuter * 2);
-    if (round) step = Math.floor(step);
-    start += (stop - start - step * (n - paddingInner)) * align;
-    bandwidth = step * (1 - paddingInner);
-    if (round) start = Math.round(start), bandwidth = Math.round(bandwidth);
-    var values = range(n).map(function(i) { return start + step * i; });
-    return ordinalRange(reverse ? values.reverse() : values);
-  }
-
-  scale.domain = function(_) {
-    return arguments.length ? (domain(_), rescale()) : domain();
-  };
-
-  scale.range = function(_) {
-    return arguments.length ? ([r0, r1] = _, r0 = +r0, r1 = +r1, rescale()) : [r0, r1];
-  };
-
-  scale.rangeRound = function(_) {
-    return [r0, r1] = _, r0 = +r0, r1 = +r1, round = true, rescale();
-  };
-
-  scale.bandwidth = function() {
-    return bandwidth;
-  };
-
-  scale.step = function() {
-    return step;
-  };
-
-  scale.round = function(_) {
-    return arguments.length ? (round = !!_, rescale()) : round;
-  };
-
-  scale.padding = function(_) {
-    return arguments.length ? (paddingInner = Math.min(1, paddingOuter = +_), rescale()) : paddingInner;
-  };
-
-  scale.paddingInner = function(_) {
-    return arguments.length ? (paddingInner = Math.min(1, _), rescale()) : paddingInner;
-  };
-
-  scale.paddingOuter = function(_) {
-    return arguments.length ? (paddingOuter = +_, rescale()) : paddingOuter;
-  };
-
-  scale.align = function(_) {
-    return arguments.length ? (align = Math.max(0, Math.min(1, _)), rescale()) : align;
-  };
-
-  scale.copy = function() {
-    return band(domain(), [r0, r1])
-        .round(round)
-        .paddingInner(paddingInner)
-        .paddingOuter(paddingOuter)
-        .align(align);
-  };
-
-  return initRange.apply(rescale(), arguments);
-}
-
-function constants(x) {
-  return function() {
-    return x;
-  };
-}
-
-function number(x) {
-  return +x;
-}
-
-var unit = [0, 1];
-
-function identity(x) {
-  return x;
-}
-
-function normalize(a, b) {
-  return (b -= (a = +a))
-      ? function(x) { return (x - a) / b; }
-      : constants(isNaN(b) ? NaN : 0.5);
-}
-
-function clamper(a, b) {
-  var t;
-  if (a > b) t = a, a = b, b = t;
-  return function(x) { return Math.max(a, Math.min(b, x)); };
-}
-
-// normalize(a, b)(x) takes a domain value x in [a,b] and returns the corresponding parameter t in [0,1].
-// interpolate(a, b)(t) takes a parameter t in [0,1] and returns the corresponding range value x in [a,b].
-function bimap(domain, range, interpolate) {
-  var d0 = domain[0], d1 = domain[1], r0 = range[0], r1 = range[1];
-  if (d1 < d0) d0 = normalize(d1, d0), r0 = interpolate(r1, r0);
-  else d0 = normalize(d0, d1), r0 = interpolate(r0, r1);
-  return function(x) { return r0(d0(x)); };
-}
-
-function polymap(domain, range, interpolate) {
-  var j = Math.min(domain.length, range.length) - 1,
-      d = new Array(j),
-      r = new Array(j),
-      i = -1;
-
-  // Reverse descending domains.
-  if (domain[j] < domain[0]) {
-    domain = domain.slice().reverse();
-    range = range.slice().reverse();
-  }
-
-  while (++i < j) {
-    d[i] = normalize(domain[i], domain[i + 1]);
-    r[i] = interpolate(range[i], range[i + 1]);
-  }
-
-  return function(x) {
-    var i = bisect(domain, x, 1, j) - 1;
-    return r[i](d[i](x));
-  };
-}
-
-function copy(source, target) {
-  return target
-      .domain(source.domain())
-      .range(source.range())
-      .interpolate(source.interpolate())
-      .clamp(source.clamp())
-      .unknown(source.unknown());
-}
-
-function transformer() {
-  var domain = unit,
-      range = unit,
-      interpolate$1 = interpolate,
-      transform,
-      untransform,
-      unknown,
-      clamp = identity,
-      piecewise,
-      output,
-      input;
-
-  function rescale() {
-    var n = Math.min(domain.length, range.length);
-    if (clamp !== identity) clamp = clamper(domain[0], domain[n - 1]);
-    piecewise = n > 2 ? polymap : bimap;
-    output = input = null;
-    return scale;
-  }
-
-  function scale(x) {
-    return x == null || isNaN(x = +x) ? unknown : (output || (output = piecewise(domain.map(transform), range, interpolate$1)))(transform(clamp(x)));
-  }
-
-  scale.invert = function(y) {
-    return clamp(untransform((input || (input = piecewise(range, domain.map(transform), interpolateNumber)))(y)));
-  };
-
-  scale.domain = function(_) {
-    return arguments.length ? (domain = Array.from(_, number), rescale()) : domain.slice();
-  };
-
-  scale.range = function(_) {
-    return arguments.length ? (range = Array.from(_), rescale()) : range.slice();
-  };
-
-  scale.rangeRound = function(_) {
-    return range = Array.from(_), interpolate$1 = interpolateRound, rescale();
-  };
-
-  scale.clamp = function(_) {
-    return arguments.length ? (clamp = _ ? true : identity, rescale()) : clamp !== identity;
-  };
-
-  scale.interpolate = function(_) {
-    return arguments.length ? (interpolate$1 = _, rescale()) : interpolate$1;
-  };
-
-  scale.unknown = function(_) {
-    return arguments.length ? (unknown = _, scale) : unknown;
-  };
-
-  return function(t, u) {
-    transform = t, untransform = u;
-    return rescale();
-  };
-}
-
-function continuous() {
-  return transformer()(identity, identity);
-}
-
 function tickFormat(start, stop, count, specifier) {
   var step = tickStep(start, stop, count),
       precision;
@@ -1958,7 +1856,153 @@ function constant(x) {
   };
 }
 
-const epsilon = 1e-12;
+const epsilon$1 = 1e-12;
+
+const pi = Math.PI,
+    tau = 2 * pi,
+    epsilon = 1e-6,
+    tauEpsilon = tau - epsilon;
+
+function append(strings) {
+  this._ += strings[0];
+  for (let i = 1, n = strings.length; i < n; ++i) {
+    this._ += arguments[i] + strings[i];
+  }
+}
+
+function appendRound(digits) {
+  let d = Math.floor(digits);
+  if (!(d >= 0)) throw new Error(`invalid digits: ${digits}`);
+  if (d > 15) return append;
+  const k = 10 ** d;
+  return function(strings) {
+    this._ += strings[0];
+    for (let i = 1, n = strings.length; i < n; ++i) {
+      this._ += Math.round(arguments[i] * k) / k + strings[i];
+    }
+  };
+}
+
+class Path {
+  constructor(digits) {
+    this._x0 = this._y0 = // start of current subpath
+    this._x1 = this._y1 = null; // end of current subpath
+    this._ = "";
+    this._append = digits == null ? append : appendRound(digits);
+  }
+  moveTo(x, y) {
+    this._append`M${this._x0 = this._x1 = +x},${this._y0 = this._y1 = +y}`;
+  }
+  closePath() {
+    if (this._x1 !== null) {
+      this._x1 = this._x0, this._y1 = this._y0;
+      this._append`Z`;
+    }
+  }
+  lineTo(x, y) {
+    this._append`L${this._x1 = +x},${this._y1 = +y}`;
+  }
+  quadraticCurveTo(x1, y1, x, y) {
+    this._append`Q${+x1},${+y1},${this._x1 = +x},${this._y1 = +y}`;
+  }
+  bezierCurveTo(x1, y1, x2, y2, x, y) {
+    this._append`C${+x1},${+y1},${+x2},${+y2},${this._x1 = +x},${this._y1 = +y}`;
+  }
+  arcTo(x1, y1, x2, y2, r) {
+    x1 = +x1, y1 = +y1, x2 = +x2, y2 = +y2, r = +r;
+
+    // Is the radius negative? Error.
+    if (r < 0) throw new Error(`negative radius: ${r}`);
+
+    let x0 = this._x1,
+        y0 = this._y1,
+        x21 = x2 - x1,
+        y21 = y2 - y1,
+        x01 = x0 - x1,
+        y01 = y0 - y1,
+        l01_2 = x01 * x01 + y01 * y01;
+
+    // Is this path empty? Move to (x1,y1).
+    if (this._x1 === null) {
+      this._append`M${this._x1 = x1},${this._y1 = y1}`;
+    }
+
+    // Or, is (x1,y1) coincident with (x0,y0)? Do nothing.
+    else if (!(l01_2 > epsilon));
+
+    // Or, are (x0,y0), (x1,y1) and (x2,y2) collinear?
+    // Equivalently, is (x1,y1) coincident with (x2,y2)?
+    // Or, is the radius zero? Line to (x1,y1).
+    else if (!(Math.abs(y01 * x21 - y21 * x01) > epsilon) || !r) {
+      this._append`L${this._x1 = x1},${this._y1 = y1}`;
+    }
+
+    // Otherwise, draw an arc!
+    else {
+      let x20 = x2 - x0,
+          y20 = y2 - y0,
+          l21_2 = x21 * x21 + y21 * y21,
+          l20_2 = x20 * x20 + y20 * y20,
+          l21 = Math.sqrt(l21_2),
+          l01 = Math.sqrt(l01_2),
+          l = r * Math.tan((pi - Math.acos((l21_2 + l01_2 - l20_2) / (2 * l21 * l01))) / 2),
+          t01 = l / l01,
+          t21 = l / l21;
+
+      // If the start tangent is not coincident with (x0,y0), line to.
+      if (Math.abs(t01 - 1) > epsilon) {
+        this._append`L${x1 + t01 * x01},${y1 + t01 * y01}`;
+      }
+
+      this._append`A${r},${r},0,0,${+(y01 * x20 > x01 * y20)},${this._x1 = x1 + t21 * x21},${this._y1 = y1 + t21 * y21}`;
+    }
+  }
+  arc(x, y, r, a0, a1, ccw) {
+    x = +x, y = +y, r = +r, ccw = !!ccw;
+
+    // Is the radius negative? Error.
+    if (r < 0) throw new Error(`negative radius: ${r}`);
+
+    let dx = r * Math.cos(a0),
+        dy = r * Math.sin(a0),
+        x0 = x + dx,
+        y0 = y + dy,
+        cw = 1 ^ ccw,
+        da = ccw ? a0 - a1 : a1 - a0;
+
+    // Is this path empty? Move to (x0,y0).
+    if (this._x1 === null) {
+      this._append`M${x0},${y0}`;
+    }
+
+    // Or, is (x0,y0) not coincident with the previous point? Line to (x0,y0).
+    else if (Math.abs(this._x1 - x0) > epsilon || Math.abs(this._y1 - y0) > epsilon) {
+      this._append`L${x0},${y0}`;
+    }
+
+    // Is this arc empty? We’re done.
+    if (!r) return;
+
+    // Does the angle go the wrong way? Flip the direction.
+    if (da < 0) da = da % tau + tau;
+
+    // Is this a complete circle? Draw two arcs to complete the circle.
+    if (da > tauEpsilon) {
+      this._append`A${r},${r},0,1,${cw},${x - dx},${y - dy}A${r},${r},0,1,${cw},${this._x1 = x0},${this._y1 = y0}`;
+    }
+
+    // Is this arc non-empty? Draw an arc!
+    else if (da > epsilon) {
+      this._append`A${r},${r},0,${+(da >= pi)},${cw},${this._x1 = x + r * Math.cos(a1)},${this._y1 = y + r * Math.sin(a1)}`;
+    }
+  }
+  rect(x, y, w, h) {
+    this._append`M${this._x0 = this._x1 = +x},${this._y0 = this._y1 = +y}h${w = +w}v${+h}h${-w}Z`;
+  }
+  toString() {
+    return this._;
+  }
+}
 
 function withPath(shape) {
   let digits = 3;
@@ -2077,112 +2121,6 @@ function line(x$1, y$1) {
   return line;
 }
 
-function area(x0, y0, y1) {
-  var x1 = null,
-      defined = constant(true),
-      context = null,
-      curve = curveLinear,
-      output = null,
-      path = withPath(area);
-
-  x0 = typeof x0 === "function" ? x0 : (x0 === undefined) ? x : constant(+x0);
-  y0 = typeof y0 === "function" ? y0 : (y0 === undefined) ? constant(0) : constant(+y0);
-  y1 = typeof y1 === "function" ? y1 : (y1 === undefined) ? y : constant(+y1);
-
-  function area(data) {
-    var i,
-        j,
-        k,
-        n = (data = array(data)).length,
-        d,
-        defined0 = false,
-        buffer,
-        x0z = new Array(n),
-        y0z = new Array(n);
-
-    if (context == null) output = curve(buffer = path());
-
-    for (i = 0; i <= n; ++i) {
-      if (!(i < n && defined(d = data[i], i, data)) === defined0) {
-        if (defined0 = !defined0) {
-          j = i;
-          output.areaStart();
-          output.lineStart();
-        } else {
-          output.lineEnd();
-          output.lineStart();
-          for (k = i - 1; k >= j; --k) {
-            output.point(x0z[k], y0z[k]);
-          }
-          output.lineEnd();
-          output.areaEnd();
-        }
-      }
-      if (defined0) {
-        x0z[i] = +x0(d, i, data), y0z[i] = +y0(d, i, data);
-        output.point(x1 ? +x1(d, i, data) : x0z[i], y1 ? +y1(d, i, data) : y0z[i]);
-      }
-    }
-
-    if (buffer) return output = null, buffer + "" || null;
-  }
-
-  function arealine() {
-    return line().defined(defined).curve(curve).context(context);
-  }
-
-  area.x = function(_) {
-    return arguments.length ? (x0 = typeof _ === "function" ? _ : constant(+_), x1 = null, area) : x0;
-  };
-
-  area.x0 = function(_) {
-    return arguments.length ? (x0 = typeof _ === "function" ? _ : constant(+_), area) : x0;
-  };
-
-  area.x1 = function(_) {
-    return arguments.length ? (x1 = _ == null ? null : typeof _ === "function" ? _ : constant(+_), area) : x1;
-  };
-
-  area.y = function(_) {
-    return arguments.length ? (y0 = typeof _ === "function" ? _ : constant(+_), y1 = null, area) : y0;
-  };
-
-  area.y0 = function(_) {
-    return arguments.length ? (y0 = typeof _ === "function" ? _ : constant(+_), area) : y0;
-  };
-
-  area.y1 = function(_) {
-    return arguments.length ? (y1 = _ == null ? null : typeof _ === "function" ? _ : constant(+_), area) : y1;
-  };
-
-  area.lineX0 =
-  area.lineY0 = function() {
-    return arealine().x(x0).y(y0);
-  };
-
-  area.lineY1 = function() {
-    return arealine().x(x0).y(y1);
-  };
-
-  area.lineX1 = function() {
-    return arealine().x(x1).y(y0);
-  };
-
-  area.defined = function(_) {
-    return arguments.length ? (defined = typeof _ === "function" ? _ : constant(!!_), area) : defined;
-  };
-
-  area.curve = function(_) {
-    return arguments.length ? (curve = _, context != null && (output = curve(context)), area) : curve;
-  };
-
-  area.context = function(_) {
-    return arguments.length ? (_ == null ? context = output = null : output = curve(context = _), area) : context;
-  };
-
-  return area;
-}
-
 function point$1(that, x, y) {
   that._context.bezierCurveTo(
     that._x1 + that._k * (that._x2 - that._x0),
@@ -2251,14 +2189,14 @@ function point(that, x, y) {
       x2 = that._x2,
       y2 = that._y2;
 
-  if (that._l01_a > epsilon) {
+  if (that._l01_a > epsilon$1) {
     var a = 2 * that._l01_2a + 3 * that._l01_a * that._l12_a + that._l12_2a,
         n = 3 * that._l01_a * (that._l01_a + that._l12_a);
     x1 = (x1 * a - that._x0 * that._l12_2a + that._x2 * that._l01_2a) / n;
     y1 = (y1 * a - that._y0 * that._l12_2a + that._y2 * that._l01_2a) / n;
   }
 
-  if (that._l23_a > epsilon) {
+  if (that._l23_a > epsilon$1) {
     var b = 2 * that._l23_2a + 3 * that._l23_a * that._l12_a + that._l12_2a,
         m = 3 * that._l23_a * (that._l23_a + that._l12_a);
     x2 = (x2 * b + that._x1 * that._l23_2a - x * that._l12_2a) / m;
@@ -2318,7 +2256,7 @@ CatmullRom.prototype = {
   }
 };
 
-var catmullRom = (function custom(alpha) {
+var curveCatmullRom = (function custom(alpha) {
 
   function catmullRom(context) {
     return alpha ? new CatmullRom(context, alpha) : new Cardinal(context, 0);
@@ -2331,171 +2269,92 @@ var catmullRom = (function custom(alpha) {
   return catmullRom;
 })(0.5);
 
-function Transform(k, x, y) {
-  this.k = k;
-  this.x = x;
-  this.y = y;
-}
+// Initialize WASM once at module level
+let wasmInitialized = false;
 
-Transform.prototype = {
-  constructor: Transform,
-  scale: function(k) {
-    return k === 1 ? this : new Transform(this.k * k, this.x, this.y);
-  },
-  translate: function(x, y) {
-    return x === 0 & y === 0 ? this : new Transform(this.k, this.x + this.k * x, this.y + this.k * y);
-  },
-  apply: function(point) {
-    return [point[0] * this.k + this.x, point[1] * this.k + this.y];
-  },
-  applyX: function(x) {
-    return x * this.k + this.x;
-  },
-  applyY: function(y) {
-    return y * this.k + this.y;
-  },
-  invert: function(location) {
-    return [(location[0] - this.x) / this.k, (location[1] - this.y) / this.k];
-  },
-  invertX: function(x) {
-    return (x - this.x) / this.k;
-  },
-  invertY: function(y) {
-    return (y - this.y) / this.k;
-  },
-  rescaleX: function(x) {
-    return x.copy().domain(x.range().map(this.invertX, this).map(x.invert, x));
-  },
-  rescaleY: function(y) {
-    return y.copy().domain(y.range().map(this.invertY, this).map(y.invert, y));
-  },
-  toString: function() {
-    return "translate(" + this.x + "," + this.y + ") scale(" + this.k + ")";
-  }
+const CACHE_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
+const PNG_HEADERS = {
+  'content-type': 'image/png',
+  'cache-control': 'public, max-age=86400',
 };
 
-new Transform(1, 0, 0);
+const handleRequest = async (request, env, ctx) => {
+  const { pathname, searchParams } = new URL(request.url);
 
-Transform.prototype;
+  // Parse ID and size from pathname
+  let id = pathname.replace('/', '').replace(/\.(svg|png)$/, '');
+  let isSmall = searchParams.has('small');
 
-const handleRequest = async (request) => {
-	const { search, pathname, searchParams } = new URL(request.url);
+  // Check if the ID contains "-small" suffix
+  if (id.endsWith('-small')) {
+    id = id.replace('-small', '');
+    isSmall = true;
+  }
 
-	const types = ['line'];
+  const cacheKey = `markethunt-chart-${id}-${isSmall ? 'small' : 'large'}`;
+  const cachedData = await env.markethuntChartCache.get(cacheKey, 'arrayBuffer');
 
-	const id = pathname.replace('/', '').replace('.svg', '').replace('.png', '');
+  if (cachedData) {
+    return new Response(cachedData, { headers: PNG_HEADERS });
+  }
 
-	// Fetch the data from markethunt
-	const url = `https://api.markethunt.win/items/${id}`;
-	const res = await fetch(url);
-	const apiData = await res.json();
+  // Fetch market data
+  const apiRes = await fetch(`https://api.markethunt.win/items/${id}`);
+  if (!apiRes.ok) {
+    return new Response('Item not found', { status: 404 });
+  }
 
-	// if we have a ?small query param, use a smaller size
+  const apiData = await apiRes.json();
+  let data = apiData.market_data.map(d => d.price);
 
-	// For each value in market_data, add the price key to strdata
-	const data = apiData.market_data.map(d => d.price);
+  if (isSmall && data.length > 365) ;
 
-	const isSmall = searchParams.has('small');
+  // Dimensions
+  const padding = isSmall ? 5 : 10;
+  const width = (isSmall ? 250 : 500) - padding * 2;
+  const height = (isSmall ? 100 : 200) - padding * 2;
 
-	if (isSmall && data.length > 365) {
-		// shrink to a year
-		data.length = 365;
-	}
+  // Scales
+  const mapX = band()
+    .domain(range(data.length))
+    .range([padding, width - padding])
+    .paddingInner(0.05)
+    .align(0.5);
 
-	const color = '#5f99d2';
-	let padding = 10;
-	let w = 500 - padding * 2;
-	let h = 200 - padding * 2;
+  const mapY = linear()
+    .domain(extent(data))
+    .nice()
+    .range([height - padding, padding]);
 
-	if (isSmall) {
-		padding = 5;
-		w = 250 - padding * 2;
-		h = 100 - padding * 2;
-	}
+  const bandwidth = mapX.bandwidth();
+  const zeroY = mapY(0);
 
-	const mapX = band()
-		.domain(range(data.length))
-		.range([padding, w - padding])
-		.paddingInner(0.05)
-		.paddingOuter([0])
-		.align([0.5]);
+  // Line generator
+  const linePath = line()
+    .x((_, i) => mapX(i) + bandwidth / 2)
+    .y(d => mapY(d))
+    .curve(curveCatmullRom.alpha(0.5))(data);
 
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 ${width} ${height}">
+      <line style="vector-effect:non-scaling-stroke;" stroke="#ccc" x1="0" x2="${width}" y1="${zeroY}" y2="${zeroY}"/>
+      <path fill="none" style="vector-effect:non-scaling-stroke;" stroke="#5f99d2" stroke-width="1" d="${linePath}"/>
+    </svg>`;
 
-	const extY = extent(data);
+  // Initialize wasm if needed
+  if (!wasmInitialized) {
+    await initialize(wasm$1);
+    wasmInitialized = true;
+  }
 
-	const mapY = linear()
-		.domain(extY)
-		.nice()
-		.range([h - padding, padding]);
+  const png = await svg2png(svg, {});
 
-	const cw = mapX.bandwidth();
-	const zero = mapY(0);
+  // Cache and respond
+  ctx.waitUntil(
+    env.markethuntChartCache.put(cacheKey, png, { expirationTtl: CACHE_TTL_SECONDS })
+  );
 
-	var lineGen = line()
-		.x((d, i) => mapX(i) + cw / 2)
-		.y((d, i) => mapY(d));
-
-	var areaGen = area()
-		.x((d, i) => mapX(i) + cw / 2)
-		.y1((d, i) => mapY(d))
-		.y0(zero);
-
-	// if (spline) {
-	lineGen.curve(catmullRom.alpha(0.5));//d3.curveBasis)
-	areaGen.curve(catmullRom.alpha(0.5));//d3.curveBasis)
-	// }
-
-	let body = '';
-
-	const bars = () => {
-		data.forEach((d, i) => {
-			const cx = mapX(i);
-			const cy = mapY(Math.max(0, d));
-			const ch = Math.abs(mapY(d) - zero);
-			body += `<rect fill="${color}" x="${cx}" y="${cy}" width="${cw}" height="${ch}"></rect>`;
-		});
-	};
-
-	const dots = () => {
-		data.forEach((d, i) => {
-			const cx = mapX(i) + cw / 2;
-			const cy = mapY(d);
-			body += `<circle style="vector-effect:non-scaling-size;" fill="${color}" cx="${cx}" cy="${cy}" r="5"></circle>`;
-		});
-	};
-
-	const line$1 = () => {
-		if (isSmall) {
-			body += `<path fill="none" style="vector-effect:non-scaling-stroke;" stroke="${color}" stroke-width="2" d="${lineGen(data)}"></path>`;
-		} else {
-			body += `<path fill="none" style="vector-effect:non-scaling-stroke;" stroke="${color}" d="${lineGen(data)}"></path>`;
-		}
-	};
-
-	const area$1 = () => {
-		body += `<path fill="${color}" d="${areaGen(data)}"></path>`;
-	};
-
-	const funcs = {
-		bars, dots, line: line$1, area: area$1
-	};
-
-	types.forEach(type => {
-		funcs[type]();
-	});
-
-	const svg = `<svg
-    xmlns="http://www.w3.org/2000/svg"
-    xmlns:xlink="http://www.w3.org/1999/xlink"
-    preserveAspectRatio="none"
-    viewBox="0 0 ${w} ${h}">
-      <line style="vector-effect:non-scaling-stroke;" stroke="#ccc" x1="0" x2="${w}" y1="${zero}" y2="${zero}"></line>
-      ${body}
-  </svg>`;
-
-	await initialize(wasm$1).catch(() => {});
-	const buf = await svg2png(svg, {});
-	return new Response(buf, { headers: { 'content-type': 'image/png' } });
+  return new Response(png, { headers: PNG_HEADERS });
 };
 
 var index = { fetch: handleRequest };
