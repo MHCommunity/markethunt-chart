@@ -1,52 +1,37 @@
-import { initialize, svg2png } from 'svg2png-wasm';
-import wasm from './svg2png_wasm_bg.wasm';
+import { initWasm, Resvg } from '@resvg/resvg-wasm';
+import wasm from './resvg.wasm';
 
 import { scaleBand, scaleLinear } from 'd3-scale';
 import { line, curveCatmullRom } from 'd3-shape';
 import { extent, range } from 'd3-array';
 
-// Initialize WASM once at module level
-let wasmInitialized = false;
-
-const CACHE_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
+const CACHE_TTL_SECONDS = 60 * 60 * 24; // 1 day, matches daily market data
+const UPSTREAM_TIMEOUT_MS = 10000;
 const PNG_HEADERS = {
   'content-type': 'image/png',
   'cache-control': 'public, max-age=86400',
 };
 
-const handleRequest = async (request, env, ctx) => {
-  const { pathname, searchParams } = new URL(request.url);
-
-  // Parse ID and size from pathname
-  let id = pathname.replace('/', '').replace(/\.(svg|png)$/, '');
-  let isSmall = searchParams.has('small');
-
-  // Check if the ID contains "-small" suffix
-  if (id.endsWith('-small')) {
-    id = id.replace('-small', '');
-    isSmall = true;
+// Initialize WASM once per isolate. Storing the promise (not a flag) keeps
+// concurrent requests from calling initWasm() twice, which throws.
+let wasmReady;
+const ensureWasm = () => {
+  if (!wasmReady) {
+    wasmReady = initWasm(wasm).catch((err) => {
+      wasmReady = undefined;
+      throw err;
+    });
   }
 
-  const cacheKey = `markethunt-chart-${id}-${isSmall ? 'small' : 'large'}`;
-  const cachedData = await env.markethuntChartCache.get(cacheKey, 'arrayBuffer');
+  return wasmReady;
+};
 
-  if (cachedData) {
-    return new Response(cachedData, { headers: PNG_HEADERS });
-  }
+const textResponse = (body, status, headers = {}) => new Response(body, {
+  status,
+  headers: { 'content-type': 'text/plain; charset=utf-8', ...headers },
+});
 
-  // Fetch market data
-  const apiRes = await fetch(`https://api.markethunt.win/items/${id}`);
-  if (!apiRes.ok) {
-    return new Response('Item not found', { status: 404 });
-  }
-
-  const apiData = await apiRes.json();
-  let data = apiData.market_data.map(d => d.price);
-
-  if (isSmall && data.length > 365) {
-    // data = data.slice(-365);
-  }
-
+const renderChart = async (data, isSmall) => {
   // Dimensions
   const padding = isSmall ? 5 : 10;
   const width = (isSmall ? 250 : 500) - padding * 2;
@@ -79,20 +64,108 @@ const handleRequest = async (request, env, ctx) => {
       <path fill="none" style="vector-effect:non-scaling-stroke;" stroke="#5f99d2" stroke-width="1" d="${linePath}"/>
     </svg>`;
 
-  // Initialize wasm if needed
-  if (!wasmInitialized) {
-    await initialize(wasm);
-    wasmInitialized = true;
+  await ensureWasm();
+
+  // resvg objects live in WASM memory and must be freed explicitly.
+  const resvg = new Resvg(svg);
+  try {
+    const image = resvg.render();
+    try {
+      return image.asPng();
+    } finally {
+      image.free();
+    }
+  } finally {
+    resvg.free();
+  }
+};
+
+const handleRequest = async (request, env, ctx) => {
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    return textResponse('Method not allowed', 405, { allow: 'GET, HEAD' });
   }
 
-  const png = await svg2png(svg, {});
+  const url = new URL(request.url);
+  const { pathname, searchParams } = url;
 
-  // Cache and respond
+  // Parse ID and size from pathname: /<id>[-small][.png|.svg]
+  const match = pathname.match(/^\/(\d{1,10})(-small)?(?:\.(?:svg|png))?$/);
+  if (!match) {
+    return textResponse('Item not found', 404);
+  }
+
+  const id = match[1];
+  const isSmall = Boolean(match[2]) || searchParams.has('small');
+
+  // Edge cache first (free, per data center), then KV (global).
+  const edgeCache = caches.default;
+  const edgeKey = new Request(`${url.origin}/${id}${isSmall ? '-small' : ''}.png`);
+  const edgeHit = await edgeCache.match(edgeKey);
+  if (edgeHit) {
+    return request.method === 'HEAD' ? new Response(null, edgeHit) : edgeHit;
+  }
+
+  const respond = (png) => {
+    const response = new Response(png, { headers: PNG_HEADERS });
+    ctx.waitUntil(edgeCache.put(edgeKey, response.clone()));
+    return request.method === 'HEAD' ? new Response(null, response) : response;
+  };
+
+  const cacheKey = `markethunt-chart-${id}-${isSmall ? 'small' : 'large'}`;
+  const cachedData = await env.markethuntChartCache.get(cacheKey, 'arrayBuffer');
+
+  if (cachedData) {
+    return respond(cachedData);
+  }
+
+  // Fetch market data
+  let apiRes;
+  try {
+    apiRes = await fetch(`https://api.markethunt.win/items/${id}`, {
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+    });
+  } catch (err) {
+    console.error(`Upstream fetch failed for item ${id}:`, err);
+    return textResponse('Upstream unavailable', 502);
+  }
+
+  if (apiRes.status === 404) {
+    return textResponse('Item not found', 404);
+  }
+
+  if (!apiRes.ok) {
+    console.error(`Upstream returned ${apiRes.status} for item ${id}`);
+    return textResponse('Upstream unavailable', 502);
+  }
+
+  let data;
+  try {
+    const apiData = await apiRes.json();
+    data = (apiData?.market_data ?? [])
+      .map(d => Number(d?.price))
+      .filter(Number.isFinite);
+  } catch (err) {
+    console.error(`Bad upstream response for item ${id}:`, err);
+    return textResponse('Upstream unavailable', 502);
+  }
+
+  if (data.length === 0) {
+    return textResponse('Item not found', 404);
+  }
+
+  let png;
+  try {
+    png = await renderChart(data, isSmall);
+  } catch (err) {
+    console.error(`Render failed for item ${id}:`, err);
+    return textResponse('Failed to render chart', 500);
+  }
+
   ctx.waitUntil(
     env.markethuntChartCache.put(cacheKey, png, { expirationTtl: CACHE_TTL_SECONDS })
   );
 
-  return new Response(png, { headers: PNG_HEADERS });
+  return respond(png);
 };
 
 export default { fetch: handleRequest };

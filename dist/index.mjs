@@ -1,28 +1,7 @@
-import wasm$1 from './svg2png_wasm_bg.wasm';
+import wasm$1 from './resvg.wasm';
 
-/**
- * @file This library uses [resvg](https://github.com/RazrFalcon/resvg), which is licensed unser MPL-2.0. The source code for resvg can be found [here](https://github.com/RazrFalcon/resvg).
- */
-
-// dist-wasm/svg2png_wasm.js
+// wasm/dist/index.js
 var wasm;
-var cachedTextDecoder = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8", { ignoreBOM: true, fatal: true }) : { decode: () => {
-  throw Error("TextDecoder not available");
-} };
-if (typeof TextDecoder !== "undefined") {
-  cachedTextDecoder.decode();
-}
-var cachedUint8Memory0 = null;
-function getUint8Memory0() {
-  if (cachedUint8Memory0 === null || cachedUint8Memory0.byteLength === 0) {
-    cachedUint8Memory0 = new Uint8Array(wasm.memory.buffer);
-  }
-  return cachedUint8Memory0;
-}
-function getStringFromWasm0(ptr, len) {
-  ptr = ptr >>> 0;
-  return cachedTextDecoder.decode(getUint8Memory0().subarray(ptr, ptr + len));
-}
 var heap = new Array(128).fill(void 0);
 heap.push(void 0, null, true, false);
 var heap_next = heap.length;
@@ -49,11 +28,12 @@ function takeObject(idx) {
   return ret;
 }
 var WASM_VECTOR_LEN = 0;
-function passArray8ToWasm0(arg, malloc) {
-  const ptr = malloc(arg.length * 1, 1) >>> 0;
-  getUint8Memory0().set(arg, ptr / 1);
-  WASM_VECTOR_LEN = arg.length;
-  return ptr;
+var cachedUint8Memory0 = null;
+function getUint8Memory0() {
+  if (cachedUint8Memory0 === null || cachedUint8Memory0.byteLength === 0) {
+    cachedUint8Memory0 = new Uint8Array(wasm.memory.buffer);
+  }
+  return cachedUint8Memory0;
 }
 var cachedTextEncoder = typeof TextEncoder !== "undefined" ? new TextEncoder("utf-8") : { encode: () => {
   throw Error("TextEncoder not available");
@@ -94,6 +74,7 @@ function passStringToWasm0(arg, malloc, realloc) {
     const view = getUint8Memory0().subarray(ptr + offset, ptr + len);
     const ret = encodeString(arg, view);
     offset += ret.written;
+    ptr = realloc(ptr, len, offset, 1) >>> 0;
   }
   WASM_VECTOR_LEN = offset;
   return ptr;
@@ -108,107 +89,322 @@ function getInt32Memory0() {
   }
   return cachedInt32Memory0;
 }
-function getArrayU8FromWasm0(ptr, len) {
+var cachedTextDecoder = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8", { ignoreBOM: true, fatal: true }) : { decode: () => {
+  throw Error("TextDecoder not available");
+} };
+if (typeof TextDecoder !== "undefined") {
+  cachedTextDecoder.decode();
+}
+function getStringFromWasm0(ptr, len) {
   ptr = ptr >>> 0;
-  return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
+  return cachedTextDecoder.decode(getUint8Memory0().subarray(ptr, ptr + len));
 }
-var cachedUint32Memory0 = null;
-function getUint32Memory0() {
-  if (cachedUint32Memory0 === null || cachedUint32Memory0.byteLength === 0) {
-    cachedUint32Memory0 = new Uint32Array(wasm.memory.buffer);
+function _assertClass(instance, klass) {
+  if (!(instance instanceof klass)) {
+    throw new Error(`expected instance of ${klass.name}`);
   }
-  return cachedUint32Memory0;
+  return instance.ptr;
 }
-function getArrayJsValueFromWasm0(ptr, len) {
-  ptr = ptr >>> 0;
-  const mem = getUint32Memory0();
-  const slice = mem.subarray(ptr / 4, ptr / 4 + len);
-  const result = [];
-  for (let i = 0; i < slice.length; i++) {
-    result.push(takeObject(slice[i]));
+function handleError(f, args) {
+  try {
+    return f.apply(this, args);
+  } catch (e) {
+    wasm.__wbindgen_exn_store(addHeapObject(e));
   }
-  return result;
 }
-function createConverter(default_serif_family, default_sans_serif_family, default_cursive_family, default_fantasy_family, default_monospace_family) {
-  var ptr0 = isLikeNone(default_serif_family) ? 0 : passStringToWasm0(default_serif_family, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-  var len0 = WASM_VECTOR_LEN;
-  var ptr1 = isLikeNone(default_sans_serif_family) ? 0 : passStringToWasm0(default_sans_serif_family, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-  var len1 = WASM_VECTOR_LEN;
-  var ptr2 = isLikeNone(default_cursive_family) ? 0 : passStringToWasm0(default_cursive_family, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-  var len2 = WASM_VECTOR_LEN;
-  var ptr3 = isLikeNone(default_fantasy_family) ? 0 : passStringToWasm0(default_fantasy_family, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-  var len3 = WASM_VECTOR_LEN;
-  var ptr4 = isLikeNone(default_monospace_family) ? 0 : passStringToWasm0(default_monospace_family, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-  var len4 = WASM_VECTOR_LEN;
-  const ret = wasm.createConverter(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3, ptr4, len4);
-  return Converter.__wrap(ret);
-}
-var Converter = class {
+var BBoxFinalization = typeof FinalizationRegistry === "undefined" ? { register: () => {
+}, unregister: () => {
+} } : new FinalizationRegistry((ptr) => wasm.__wbg_bbox_free(ptr >>> 0));
+var BBox = class _BBox {
   static __wrap(ptr) {
     ptr = ptr >>> 0;
-    const obj = Object.create(Converter.prototype);
+    const obj = Object.create(_BBox.prototype);
     obj.__wbg_ptr = ptr;
+    BBoxFinalization.register(obj, obj.__wbg_ptr, obj);
     return obj;
   }
   __destroy_into_raw() {
     const ptr = this.__wbg_ptr;
     this.__wbg_ptr = 0;
+    BBoxFinalization.unregister(this);
     return ptr;
   }
   free() {
     const ptr = this.__destroy_into_raw();
-    wasm.__wbg_converter_free(ptr);
+    wasm.__wbg_bbox_free(ptr);
   }
   /**
-  * @param {Uint8Array} font
+  * @returns {number}
   */
-  registerFont(font) {
-    const ptr0 = passArray8ToWasm0(font, wasm.__wbindgen_malloc);
-    const len0 = WASM_VECTOR_LEN;
-    wasm.converter_registerFont(this.__wbg_ptr, ptr0, len0);
+  get x() {
+    const ret = wasm.__wbg_get_bbox_x(this.__wbg_ptr);
+    return ret;
   }
   /**
-  * @param {string} svg
-  * @param {number | undefined} scale
-  * @param {number | undefined} width
-  * @param {number | undefined} height
-  * @param {string | undefined} background
+  * @param {number} arg0
+  */
+  set x(arg0) {
+    wasm.__wbg_set_bbox_x(this.__wbg_ptr, arg0);
+  }
+  /**
+  * @returns {number}
+  */
+  get y() {
+    const ret = wasm.__wbg_get_bbox_y(this.__wbg_ptr);
+    return ret;
+  }
+  /**
+  * @param {number} arg0
+  */
+  set y(arg0) {
+    wasm.__wbg_set_bbox_y(this.__wbg_ptr, arg0);
+  }
+  /**
+  * @returns {number}
+  */
+  get width() {
+    const ret = wasm.__wbg_get_bbox_width(this.__wbg_ptr);
+    return ret;
+  }
+  /**
+  * @param {number} arg0
+  */
+  set width(arg0) {
+    wasm.__wbg_set_bbox_width(this.__wbg_ptr, arg0);
+  }
+  /**
+  * @returns {number}
+  */
+  get height() {
+    const ret = wasm.__wbg_get_bbox_height(this.__wbg_ptr);
+    return ret;
+  }
+  /**
+  * @param {number} arg0
+  */
+  set height(arg0) {
+    wasm.__wbg_set_bbox_height(this.__wbg_ptr, arg0);
+  }
+};
+var RenderedImageFinalization = typeof FinalizationRegistry === "undefined" ? { register: () => {
+}, unregister: () => {
+} } : new FinalizationRegistry((ptr) => wasm.__wbg_renderedimage_free(ptr >>> 0));
+var RenderedImage = class _RenderedImage {
+  static __wrap(ptr) {
+    ptr = ptr >>> 0;
+    const obj = Object.create(_RenderedImage.prototype);
+    obj.__wbg_ptr = ptr;
+    RenderedImageFinalization.register(obj, obj.__wbg_ptr, obj);
+    return obj;
+  }
+  __destroy_into_raw() {
+    const ptr = this.__wbg_ptr;
+    this.__wbg_ptr = 0;
+    RenderedImageFinalization.unregister(this);
+    return ptr;
+  }
+  free() {
+    const ptr = this.__destroy_into_raw();
+    wasm.__wbg_renderedimage_free(ptr);
+  }
+  /**
+  * Get the PNG width
+  * @returns {number}
+  */
+  get width() {
+    const ret = wasm.renderedimage_width(this.__wbg_ptr);
+    return ret >>> 0;
+  }
+  /**
+  * Get the PNG height
+  * @returns {number}
+  */
+  get height() {
+    const ret = wasm.renderedimage_height(this.__wbg_ptr);
+    return ret >>> 0;
+  }
+  /**
+  * Write the image data to Uint8Array
   * @returns {Uint8Array}
   */
-  convert(svg, scale, width, height, background) {
+  asPng() {
     try {
       const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-      const ptr0 = passStringToWasm0(svg, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-      const len0 = WASM_VECTOR_LEN;
-      var ptr1 = isLikeNone(background) ? 0 : passStringToWasm0(background, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-      var len1 = WASM_VECTOR_LEN;
-      wasm.converter_convert(retptr, this.__wbg_ptr, ptr0, len0, !isLikeNone(scale), isLikeNone(scale) ? 0 : scale, !isLikeNone(width), isLikeNone(width) ? 0 : width, !isLikeNone(height), isLikeNone(height) ? 0 : height, ptr1, len1);
+      wasm.renderedimage_asPng(retptr, this.__wbg_ptr);
       var r0 = getInt32Memory0()[retptr / 4 + 0];
       var r1 = getInt32Memory0()[retptr / 4 + 1];
       var r2 = getInt32Memory0()[retptr / 4 + 2];
-      var r3 = getInt32Memory0()[retptr / 4 + 3];
-      if (r3) {
-        throw takeObject(r2);
+      if (r2) {
+        throw takeObject(r1);
       }
-      var v3 = getArrayU8FromWasm0(r0, r1).slice();
-      wasm.__wbindgen_free(r0, r1 * 1);
-      return v3;
+      return takeObject(r0);
     } finally {
       wasm.__wbindgen_add_to_stack_pointer(16);
     }
   }
   /**
-  * @returns {any[]}
+  * Get the RGBA pixels of the image
+  * @returns {Uint8Array}
   */
-  list_fonts() {
+  get pixels() {
+    const ret = wasm.renderedimage_pixels(this.__wbg_ptr);
+    return takeObject(ret);
+  }
+};
+var ResvgFinalization = typeof FinalizationRegistry === "undefined" ? { register: () => {
+}, unregister: () => {
+} } : new FinalizationRegistry((ptr) => wasm.__wbg_resvg_free(ptr >>> 0));
+var Resvg = class {
+  __destroy_into_raw() {
+    const ptr = this.__wbg_ptr;
+    this.__wbg_ptr = 0;
+    ResvgFinalization.unregister(this);
+    return ptr;
+  }
+  free() {
+    const ptr = this.__destroy_into_raw();
+    wasm.__wbg_resvg_free(ptr);
+  }
+  /**
+  * @param {Uint8Array | string} svg
+  * @param {string | undefined} [options]
+  * @param {Array<any> | undefined} [custom_font_buffers]
+  */
+  constructor(svg, options, custom_font_buffers) {
     try {
       const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-      wasm.converter_list_fonts(retptr, this.__wbg_ptr);
+      var ptr0 = isLikeNone(options) ? 0 : passStringToWasm0(options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+      var len0 = WASM_VECTOR_LEN;
+      wasm.resvg_new(retptr, addHeapObject(svg), ptr0, len0, isLikeNone(custom_font_buffers) ? 0 : addHeapObject(custom_font_buffers));
       var r0 = getInt32Memory0()[retptr / 4 + 0];
       var r1 = getInt32Memory0()[retptr / 4 + 1];
-      var v1 = getArrayJsValueFromWasm0(r0, r1).slice();
-      wasm.__wbindgen_free(r0, r1 * 4);
-      return v1;
+      var r2 = getInt32Memory0()[retptr / 4 + 2];
+      if (r2) {
+        throw takeObject(r1);
+      }
+      this.__wbg_ptr = r0 >>> 0;
+      return this;
+    } finally {
+      wasm.__wbindgen_add_to_stack_pointer(16);
+    }
+  }
+  /**
+  * Get the SVG width
+  * @returns {number}
+  */
+  get width() {
+    const ret = wasm.resvg_width(this.__wbg_ptr);
+    return ret;
+  }
+  /**
+  * Get the SVG height
+  * @returns {number}
+  */
+  get height() {
+    const ret = wasm.resvg_height(this.__wbg_ptr);
+    return ret;
+  }
+  /**
+  * Renders an SVG in Wasm
+  * @returns {RenderedImage}
+  */
+  render() {
+    try {
+      const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+      wasm.resvg_render(retptr, this.__wbg_ptr);
+      var r0 = getInt32Memory0()[retptr / 4 + 0];
+      var r1 = getInt32Memory0()[retptr / 4 + 1];
+      var r2 = getInt32Memory0()[retptr / 4 + 2];
+      if (r2) {
+        throw takeObject(r1);
+      }
+      return RenderedImage.__wrap(r0);
+    } finally {
+      wasm.__wbindgen_add_to_stack_pointer(16);
+    }
+  }
+  /**
+  * Output usvg-simplified SVG string
+  * @returns {string}
+  */
+  toString() {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+      const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+      wasm.resvg_toString(retptr, this.__wbg_ptr);
+      var r0 = getInt32Memory0()[retptr / 4 + 0];
+      var r1 = getInt32Memory0()[retptr / 4 + 1];
+      deferred1_0 = r0;
+      deferred1_1 = r1;
+      return getStringFromWasm0(r0, r1);
+    } finally {
+      wasm.__wbindgen_add_to_stack_pointer(16);
+      wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+  }
+  /**
+  * Calculate a maximum bounding box of all visible elements in this SVG.
+  *
+  * Note: path bounding box are approx values.
+  * @returns {BBox | undefined}
+  */
+  innerBBox() {
+    const ret = wasm.resvg_innerBBox(this.__wbg_ptr);
+    return ret === 0 ? void 0 : BBox.__wrap(ret);
+  }
+  /**
+  * Calculate a maximum bounding box of all visible elements in this SVG.
+  * This will first apply transform.
+  * Similar to `SVGGraphicsElement.getBBox()` DOM API.
+  * @returns {BBox | undefined}
+  */
+  getBBox() {
+    const ret = wasm.resvg_getBBox(this.__wbg_ptr);
+    return ret === 0 ? void 0 : BBox.__wrap(ret);
+  }
+  /**
+  * Use a given `BBox` to crop the svg. Currently this method simply changes
+  * the viewbox/size of the svg and do not move the elements for simplicity
+  * @param {BBox} bbox
+  */
+  cropByBBox(bbox) {
+    _assertClass(bbox, BBox);
+    wasm.resvg_cropByBBox(this.__wbg_ptr, bbox.__wbg_ptr);
+  }
+  /**
+  * @returns {Array<any>}
+  */
+  imagesToResolve() {
+    try {
+      const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+      wasm.resvg_imagesToResolve(retptr, this.__wbg_ptr);
+      var r0 = getInt32Memory0()[retptr / 4 + 0];
+      var r1 = getInt32Memory0()[retptr / 4 + 1];
+      var r2 = getInt32Memory0()[retptr / 4 + 2];
+      if (r2) {
+        throw takeObject(r1);
+      }
+      return takeObject(r0);
+    } finally {
+      wasm.__wbindgen_add_to_stack_pointer(16);
+    }
+  }
+  /**
+  * @param {string} href
+  * @param {Uint8Array} buffer
+  */
+  resolveImage(href, buffer) {
+    try {
+      const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+      const ptr0 = passStringToWasm0(href, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+      const len0 = WASM_VECTOR_LEN;
+      wasm.resvg_resolveImage(retptr, this.__wbg_ptr, ptr0, len0, addHeapObject(buffer));
+      var r0 = getInt32Memory0()[retptr / 4 + 0];
+      var r1 = getInt32Memory0()[retptr / 4 + 1];
+      if (r1) {
+        throw takeObject(r0);
+      }
     } finally {
       wasm.__wbindgen_add_to_stack_pointer(16);
     }
@@ -241,34 +437,83 @@ async function __wbg_load(module, imports) {
 function __wbg_get_imports() {
   const imports = {};
   imports.wbg = {};
+  imports.wbg.__wbg_new_28c511d9baebfa89 = function(arg0, arg1) {
+    const ret = new Error(getStringFromWasm0(arg0, arg1));
+    return addHeapObject(ret);
+  };
+  imports.wbg.__wbindgen_memory = function() {
+    const ret = wasm.memory;
+    return addHeapObject(ret);
+  };
+  imports.wbg.__wbg_buffer_12d079cc21e14bdb = function(arg0) {
+    const ret = getObject(arg0).buffer;
+    return addHeapObject(ret);
+  };
+  imports.wbg.__wbg_newwithbyteoffsetandlength_aa4a17c33a06e5cb = function(arg0, arg1, arg2) {
+    const ret = new Uint8Array(getObject(arg0), arg1 >>> 0, arg2 >>> 0);
+    return addHeapObject(ret);
+  };
+  imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
+    takeObject(arg0);
+  };
+  imports.wbg.__wbg_new_63b92bc8671ed464 = function(arg0) {
+    const ret = new Uint8Array(getObject(arg0));
+    return addHeapObject(ret);
+  };
+  imports.wbg.__wbg_values_839f3396d5aac002 = function(arg0) {
+    const ret = getObject(arg0).values();
+    return addHeapObject(ret);
+  };
+  imports.wbg.__wbg_next_196c84450b364254 = function() {
+    return handleError(function(arg0) {
+      const ret = getObject(arg0).next();
+      return addHeapObject(ret);
+    }, arguments);
+  };
+  imports.wbg.__wbg_done_298b57d23c0fc80c = function(arg0) {
+    const ret = getObject(arg0).done;
+    return ret;
+  };
+  imports.wbg.__wbg_value_d93c65011f51a456 = function(arg0) {
+    const ret = getObject(arg0).value;
+    return addHeapObject(ret);
+  };
+  imports.wbg.__wbg_instanceof_Uint8Array_2b3bbecd033d19f6 = function(arg0) {
+    let result;
+    try {
+      result = getObject(arg0) instanceof Uint8Array;
+    } catch (_) {
+      result = false;
+    }
+    const ret = result;
+    return ret;
+  };
+  imports.wbg.__wbindgen_string_get = function(arg0, arg1) {
+    const obj = getObject(arg1);
+    const ret = typeof obj === "string" ? obj : void 0;
+    var ptr1 = isLikeNone(ret) ? 0 : passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    var len1 = WASM_VECTOR_LEN;
+    getInt32Memory0()[arg0 / 4 + 1] = len1;
+    getInt32Memory0()[arg0 / 4 + 0] = ptr1;
+  };
+  imports.wbg.__wbg_new_16b304a2cfa7ff4a = function() {
+    const ret = new Array();
+    return addHeapObject(ret);
+  };
   imports.wbg.__wbindgen_string_new = function(arg0, arg1) {
     const ret = getStringFromWasm0(arg0, arg1);
     return addHeapObject(ret);
   };
-  imports.wbg.__wbg_new_abda76e883ba8a5f = function() {
-    const ret = new Error();
-    return addHeapObject(ret);
+  imports.wbg.__wbg_push_a5b05aedc7234f9f = function(arg0, arg1) {
+    const ret = getObject(arg0).push(getObject(arg1));
+    return ret;
   };
-  imports.wbg.__wbg_stack_658279fe44541cf6 = function(arg0, arg1) {
-    const ret = getObject(arg1).stack;
-    const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len1 = WASM_VECTOR_LEN;
-    getInt32Memory0()[arg0 / 4 + 1] = len1;
-    getInt32Memory0()[arg0 / 4 + 0] = ptr1;
+  imports.wbg.__wbg_length_c20a40f15020d68a = function(arg0) {
+    const ret = getObject(arg0).length;
+    return ret;
   };
-  imports.wbg.__wbg_error_f851667af71bcfc6 = function(arg0, arg1) {
-    let deferred0_0;
-    let deferred0_1;
-    try {
-      deferred0_0 = arg0;
-      deferred0_1 = arg1;
-      console.error(getStringFromWasm0(arg0, arg1));
-    } finally {
-      wasm.__wbindgen_free(deferred0_0, deferred0_1, 1);
-    }
-  };
-  imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
-    takeObject(arg0);
+  imports.wbg.__wbg_set_a47bac70306a19a7 = function(arg0, arg1, arg2) {
+    getObject(arg0).set(getObject(arg1), arg2 >>> 0);
   };
   imports.wbg.__wbindgen_throw = function(arg0, arg1) {
     throw new Error(getStringFromWasm0(arg0, arg1));
@@ -279,16 +524,14 @@ function __wbg_finalize_init(instance, module) {
   wasm = instance.exports;
   __wbg_init.__wbindgen_wasm_module = module;
   cachedInt32Memory0 = null;
-  cachedUint32Memory0 = null;
   cachedUint8Memory0 = null;
-  wasm.__wbindgen_start();
   return wasm;
 }
 async function __wbg_init(input) {
   if (wasm !== void 0)
     return wasm;
   if (typeof input === "undefined") {
-    input = new URL("svg2png_wasm_bg.wasm", void 0);
+    input = new URL("index_bg.wasm", void 0);
   }
   const imports = __wbg_get_imports();
   if (typeof input === "string" || typeof Request === "function" && input instanceof Request || typeof URL === "function" && input instanceof URL) {
@@ -297,66 +540,43 @@ async function __wbg_init(input) {
   const { instance, module } = await __wbg_load(await input, imports);
   return __wbg_finalize_init(instance, module);
 }
-var svg2png_wasm_default = __wbg_init;
+var dist_default = __wbg_init;
 
-// lib/index.ts
+// wasm-binding.ts
 var initialized = false;
-var initialize = async (mod) => {
+var initWasm = async (module_or_path) => {
   if (initialized) {
-    throw new Error(
-      "Already initialized. The `initialize` function can be used only once."
-    );
+    throw new Error("Already initialized. The `initWasm()` function can be used only once.");
   }
-  await svg2png_wasm_default(await mod);
+  await dist_default(await module_or_path);
   initialized = true;
 };
-var createSvg2png = (opts) => {
-  if (!initialized)
-    throw new Error(
-      "WASM has not been initialized. Call `initialize` function."
-    );
-  let converter;
-  converter = createConverter(
-    opts?.defaultFontFamily?.serifFamily,
-    opts?.defaultFontFamily?.sansSerifFamily,
-    opts?.defaultFontFamily?.cursiveFamily,
-    opts?.defaultFontFamily?.fantasyFamily,
-    opts?.defaultFontFamily?.monospaceFamily
-  );
-  for (const font of opts?.fonts ?? []) {
-    converter.registerFont(font);
-  }
-  const svg2png2 = (svg, options) => new Promise((resolve, reject) => {
-    try {
-      const result = converter?.convert(
-        svg,
-        options?.scale,
-        options?.width,
-        options?.height,
-        options?.backgroundColor
-      );
-      if (result)
-        resolve(result);
-      else
-        throw new Error("Converter already disposed.");
-    } catch (e) {
-      if (e instanceof Error)
-        reject(e);
-      else
-        reject(new Error(`${e}`));
+var Resvg2 = class extends Resvg {
+  /**
+   * @param {Uint8Array | string} svg
+   * @param {ResvgRenderOptions | undefined} options
+   */
+  constructor(svg, options) {
+    if (!initialized)
+      throw new Error("Wasm has not been initialized. Call `initWasm()` function.");
+    const font = options?.font;
+    if (!!font && isCustomFontsOptions(font)) {
+      const serializableOptions = {
+        ...options,
+        font: {
+          ...font,
+          fontBuffers: void 0
+        }
+      };
+      super(svg, JSON.stringify(serializableOptions), font.fontBuffers);
+    } else {
+      super(svg, JSON.stringify(options));
     }
-  });
-  svg2png2.dispose = () => {
-    converter?.free();
-    converter = void 0;
-  };
-  svg2png2.getLoadedFontFamilies = () => converter?.list_fonts() ?? [];
-  return svg2png2;
+  }
 };
-var svg2png = (svg, opts) => {
-  const convert = createSvg2png(opts);
-  return convert(svg, opts).finally(() => convert.dispose());
-};
+function isCustomFontsOptions(value) {
+  return Object.prototype.hasOwnProperty.call(value, "fontBuffers");
+}
 
 function ascending(a, b) {
   return a == null || b == null ? NaN : a < b ? -1 : a > b ? 1 : a >= b ? 0 : NaN;
@@ -1440,8 +1660,8 @@ function formatDecimal(x) {
 // significant digits p, where x is positive and p is in [1, 21] or undefined.
 // For example, formatDecimalParts(1.23) returns ["123", 0].
 function formatDecimalParts(x, p) {
-  if ((i = (x = p ? x.toExponential(p - 1) : x.toExponential()).indexOf("e")) < 0) return null; // NaN, ±Infinity
-  var i, coefficient = x.slice(0, i);
+  if (!isFinite(x) || x === 0) return null; // NaN, ±Infinity, ±0
+  var i = (x = p ? x.toExponential(p - 1) : x.toExponential()).indexOf("e"), coefficient = x.slice(0, i);
 
   // The string returned by toExponential either has the form \d\.\d+e[-+]\d+
   // (e.g., 1.2e+3) or the form \de[-+]\d+ (e.g., 1e+3).
@@ -1546,7 +1766,7 @@ var prefixExponent;
 
 function formatPrefixAuto(x, p) {
   var d = formatDecimalParts(x, p);
-  if (!d) return x + "";
+  if (!d) return prefixExponent = undefined, x.toPrecision(p);
   var coefficient = d[0],
       exponent = d[1],
       i = exponent - (prefixExponent = Math.max(-8, Math.min(8, Math.floor(exponent / 3))) * 3) + 1,
@@ -1600,7 +1820,7 @@ function formatLocale(locale) {
       minus = locale.minus === undefined ? "−" : locale.minus + "",
       nan = locale.nan === undefined ? "NaN" : locale.nan + "";
 
-  function newFormat(specifier) {
+  function newFormat(specifier, options) {
     specifier = formatSpecifier(specifier);
 
     var fill = specifier.fill,
@@ -1625,8 +1845,8 @@ function formatLocale(locale) {
 
     // Compute the prefix and suffix.
     // For SI-prefix, the suffix is lazily computed.
-    var prefix = symbol === "$" ? currencyPrefix : symbol === "#" && /[boxX]/.test(type) ? "0" + type.toLowerCase() : "",
-        suffix = symbol === "$" ? currencySuffix : /[%p]/.test(type) ? percent : "";
+    var prefix = (options && options.prefix !== undefined ? options.prefix : "") + (symbol === "$" ? currencyPrefix : symbol === "#" && /[boxX]/.test(type) ? "0" + type.toLowerCase() : ""),
+        suffix = (symbol === "$" ? currencySuffix : /[%p]/.test(type) ? percent : "") + (options && options.suffix !== undefined ? options.suffix : "");
 
     // What format function should we use?
     // Is this an integer type?
@@ -1667,7 +1887,7 @@ function formatLocale(locale) {
 
         // Compute the prefix and suffix.
         valuePrefix = (valueNegative ? (sign === "(" ? sign : minus) : sign === "-" || sign === "(" ? "" : sign) + valuePrefix;
-        valueSuffix = (type === "s" ? prefixes[8 + prefixExponent / 3] : "") + valueSuffix + (valueNegative && sign === "(" ? ")" : "");
+        valueSuffix = (type === "s" && !isNaN(value) && prefixExponent !== undefined ? prefixes[8 + prefixExponent / 3] : "") + valueSuffix + (valueNegative && sign === "(" ? ")" : "");
 
         // Break the formatted value into the integer “value” part that can be
         // grouped, and fractional or exponential “suffix” part that is not.
@@ -1712,12 +1932,11 @@ function formatLocale(locale) {
   }
 
   function formatPrefix(specifier, value) {
-    var f = newFormat((specifier = formatSpecifier(specifier), specifier.type = "f", specifier)),
-        e = Math.max(-8, Math.min(8, Math.floor(exponent(value) / 3))) * 3,
+    var e = Math.max(-8, Math.min(8, Math.floor(exponent(value) / 3))) * 3,
         k = Math.pow(10, -e),
-        prefix = prefixes[8 + e / 3];
+        f = newFormat((specifier = formatSpecifier(specifier), specifier.type = "f", specifier), {suffix: prefixes[8 + e / 3]});
     return function(value) {
-      return f(k * value) + prefix;
+      return f(k * value);
     };
   }
 
@@ -2269,46 +2488,33 @@ var curveCatmullRom = (function custom(alpha) {
   return catmullRom;
 })(0.5);
 
-// Initialize WASM once at module level
-let wasmInitialized = false;
-
-const CACHE_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
+const CACHE_TTL_SECONDS = 60 * 60 * 24; // 1 day, matches daily market data
+const UPSTREAM_TIMEOUT_MS = 10000;
 const PNG_HEADERS = {
   'content-type': 'image/png',
   'cache-control': 'public, max-age=86400',
 };
 
-const handleRequest = async (request, env, ctx) => {
-  const { pathname, searchParams } = new URL(request.url);
-
-  // Parse ID and size from pathname
-  let id = pathname.replace('/', '').replace(/\.(svg|png)$/, '');
-  let isSmall = searchParams.has('small');
-
-  // Check if the ID contains "-small" suffix
-  if (id.endsWith('-small')) {
-    id = id.replace('-small', '');
-    isSmall = true;
+// Initialize WASM once per isolate. Storing the promise (not a flag) keeps
+// concurrent requests from calling initWasm() twice, which throws.
+let wasmReady;
+const ensureWasm = () => {
+  if (!wasmReady) {
+    wasmReady = initWasm(wasm$1).catch((err) => {
+      wasmReady = undefined;
+      throw err;
+    });
   }
 
-  const cacheKey = `markethunt-chart-${id}-${isSmall ? 'small' : 'large'}`;
-  const cachedData = await env.markethuntChartCache.get(cacheKey, 'arrayBuffer');
+  return wasmReady;
+};
 
-  if (cachedData) {
-    return new Response(cachedData, { headers: PNG_HEADERS });
-  }
+const textResponse = (body, status, headers = {}) => new Response(body, {
+  status,
+  headers: { 'content-type': 'text/plain; charset=utf-8', ...headers },
+});
 
-  // Fetch market data
-  const apiRes = await fetch(`https://api.markethunt.win/items/${id}`);
-  if (!apiRes.ok) {
-    return new Response('Item not found', { status: 404 });
-  }
-
-  const apiData = await apiRes.json();
-  let data = apiData.market_data.map(d => d.price);
-
-  if (isSmall && data.length > 365) ;
-
+const renderChart = async (data, isSmall) => {
   // Dimensions
   const padding = isSmall ? 5 : 10;
   const width = (isSmall ? 250 : 500) - padding * 2;
@@ -2341,20 +2547,108 @@ const handleRequest = async (request, env, ctx) => {
       <path fill="none" style="vector-effect:non-scaling-stroke;" stroke="#5f99d2" stroke-width="1" d="${linePath}"/>
     </svg>`;
 
-  // Initialize wasm if needed
-  if (!wasmInitialized) {
-    await initialize(wasm$1);
-    wasmInitialized = true;
+  await ensureWasm();
+
+  // resvg objects live in WASM memory and must be freed explicitly.
+  const resvg = new Resvg2(svg);
+  try {
+    const image = resvg.render();
+    try {
+      return image.asPng();
+    } finally {
+      image.free();
+    }
+  } finally {
+    resvg.free();
+  }
+};
+
+const handleRequest = async (request, env, ctx) => {
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    return textResponse('Method not allowed', 405, { allow: 'GET, HEAD' });
   }
 
-  const png = await svg2png(svg, {});
+  const url = new URL(request.url);
+  const { pathname, searchParams } = url;
 
-  // Cache and respond
+  // Parse ID and size from pathname: /<id>[-small][.png|.svg]
+  const match = pathname.match(/^\/(\d{1,10})(-small)?(?:\.(?:svg|png))?$/);
+  if (!match) {
+    return textResponse('Item not found', 404);
+  }
+
+  const id = match[1];
+  const isSmall = Boolean(match[2]) || searchParams.has('small');
+
+  // Edge cache first (free, per data center), then KV (global).
+  const edgeCache = caches.default;
+  const edgeKey = new Request(`${url.origin}/${id}${isSmall ? '-small' : ''}.png`);
+  const edgeHit = await edgeCache.match(edgeKey);
+  if (edgeHit) {
+    return request.method === 'HEAD' ? new Response(null, edgeHit) : edgeHit;
+  }
+
+  const respond = (png) => {
+    const response = new Response(png, { headers: PNG_HEADERS });
+    ctx.waitUntil(edgeCache.put(edgeKey, response.clone()));
+    return request.method === 'HEAD' ? new Response(null, response) : response;
+  };
+
+  const cacheKey = `markethunt-chart-${id}-${isSmall ? 'small' : 'large'}`;
+  const cachedData = await env.markethuntChartCache.get(cacheKey, 'arrayBuffer');
+
+  if (cachedData) {
+    return respond(cachedData);
+  }
+
+  // Fetch market data
+  let apiRes;
+  try {
+    apiRes = await fetch(`https://api.markethunt.win/items/${id}`, {
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+    });
+  } catch (err) {
+    console.error(`Upstream fetch failed for item ${id}:`, err);
+    return textResponse('Upstream unavailable', 502);
+  }
+
+  if (apiRes.status === 404) {
+    return textResponse('Item not found', 404);
+  }
+
+  if (!apiRes.ok) {
+    console.error(`Upstream returned ${apiRes.status} for item ${id}`);
+    return textResponse('Upstream unavailable', 502);
+  }
+
+  let data;
+  try {
+    const apiData = await apiRes.json();
+    data = (apiData?.market_data ?? [])
+      .map(d => Number(d?.price))
+      .filter(Number.isFinite);
+  } catch (err) {
+    console.error(`Bad upstream response for item ${id}:`, err);
+    return textResponse('Upstream unavailable', 502);
+  }
+
+  if (data.length === 0) {
+    return textResponse('Item not found', 404);
+  }
+
+  let png;
+  try {
+    png = await renderChart(data, isSmall);
+  } catch (err) {
+    console.error(`Render failed for item ${id}:`, err);
+    return textResponse('Failed to render chart', 500);
+  }
+
   ctx.waitUntil(
     env.markethuntChartCache.put(cacheKey, png, { expirationTtl: CACHE_TTL_SECONDS })
   );
 
-  return new Response(png, { headers: PNG_HEADERS });
+  return respond(png);
 };
 
 var index = { fetch: handleRequest };
